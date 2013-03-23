@@ -49,7 +49,9 @@
 
 	var renderTree = function(tree, $tree) {
 		var $header = $('<h2>', {text: tree.description}),
-			$sections = $('<ul>'),
+			$methodsHeader = $('<h3>', {text: 'Methods'}),
+			$eventsHeader = $('<h3>', {text: 'Events'}),
+			$sections = $('<div>', {id: 'sectionsAccordion', 'class':'accordion'}),
 			sections = {};
 
 		$.each(tree.methods, function(name, details) {
@@ -64,8 +66,19 @@
 		});
 			
 		$.each(sections, function(section, methods) {
-			var $section = $('<li>'),
-				$methods = $('<ul>');
+			var $section = $('<div>', {'class': 'accordion-group'}),
+				$sectionHead = $('<div>', {'class': 'accordion-heading'}),
+				sectionId = 'collapse-'+section.replace(/[^a-z]/gi,'-'),
+				$sectionLink = $('<a>', {
+					href: '#'+sectionId, 
+					'class': 'accordion-toggle', 
+					'data-toggle':'collapse',
+					'data-parent':'#sectionsAccordion', 
+					text: section
+				}),
+				$accBody = $('<div>', {'class':'accordion-body collapse', id: sectionId}),
+				$accInner = $('<div>', {'class':'accordion-inner'}),
+				$modules = $('<ul>');
 
 			$.each(methods, function(name, details) {
 				var $api = $('<li>'),
@@ -93,14 +106,19 @@
 				});
 
 				$api.append(' ' + name).append($details);
-				$methods.append($api);
+				$modules.append($api);
 			});
-
-			$section.append(section).append($methods);
+			$accInner.append($modules);
+			$accBody.append($accInner);
+			$sectionHead.append($sectionLink);
+			$section.append($sectionHead).append($accBody);
 			$sections.append($section);
 		});
 
-		$tree.append($header).append($sections);
+		$tree
+			.append($header)
+			.append($methodsHeader)
+			.append($sections);
 	};
 
 	$(function() {

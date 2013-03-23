@@ -8,7 +8,6 @@ window.flingrUI = (function(ui, launch, _, $, undefined) {
 
 	ui = function(connect, launchData, callback) {
 		var _this = this;
-		console.info("Launching UI", launchData, connect);
 		launch("console.html", {
 			bounds: {
 				width: 800,
@@ -19,7 +18,6 @@ window.flingrUI = (function(ui, launch, _, $, undefined) {
 			minWidth: 520,
 			minHeight: 280
 		}, function(win) {
-			console.log("Window launched", win.contentWindow);
 			win.contentWindow.flingr = {
 				connect: connect
 			};

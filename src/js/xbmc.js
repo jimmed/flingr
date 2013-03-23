@@ -96,4 +96,3 @@ window.xbmc = (function(xbmc, $, undefined) {
 	return xbmc;
 
 }).call(this, window.xbmc || {}, jQuery);
-console.log("XBMC loaded", xbmc);
