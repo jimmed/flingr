@@ -1,6 +1,6 @@
 {
-	"name": "Flingr Alpha",
-	"version": "0.1.0",
+	"name": "XBMC API Browser",
+	"version": "0.1.1",
 	"manifest_version": 2,
 	"app": { 
 		"background": {
