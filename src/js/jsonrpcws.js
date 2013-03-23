@@ -3,7 +3,7 @@
  * @author Jim O'Brien
  */
 
-window.jsonrpc = (function(jsonrpc, undefined) {
+window.jsonrpc = (function(jsonrpc, ws, undefined) {
 
 	jsonrpc = function(host, port) {
 		var rpcversion = "2.0",
@@ -14,6 +14,47 @@ window.jsonrpc = (function(jsonrpc, undefined) {
 		    serialize,
 		    trigger,
 		    listenForEvents;
+
+		trigger = function(event, data) {
+			if(_.isArray(events[event])) {
+				_.each(events[event], function(ev) {
+					ev(data, event);
+				});
+			}
+		};
+
+		listenForEvents = _.once(function() {
+			socket.on('data', function(json) {
+				var data = deserialize(json),
+					eventName, errEventName;
+
+				// Responses to our requests will have an 'id' and a 'result' or 'error'
+				if(data.id) {
+					eventName = 'JSONRPC.Response' + data.id, 
+					errEventName = eventName + '.Error';
+					if(data.result) {
+						trigger(eventName, data.result);
+					}
+					if(data.error) {
+						console.error('JSONRPC error', error);
+						trigger(errEventName, data.error);
+					}
+					events = _.omit(events, [eventName, errEventName]);
+				}
+				// Event notifications have a 'method', and sometimes 'params'
+				else if(data.method) {
+					trigger(data.method, data.params || {});
+					trigger('JSONRPC.Event', data);
+				}
+				else {
+					console.info('Some kind of unknown data came back from the socket.', json, data);
+				}
+			});
+			socket.on('open', function() { trigger('JSONRPC.Connected') });
+			socket.on('close', function() { trigger('JSONRPC.Disconnected') });
+			socket.on('error', function(error) { trigger('JSONRPC.SocketError', error) });
+		});
+		listenForEvents();
 
 		serialize = function(data) {
 			var thisId = ++lastId,
@@ -46,38 +87,6 @@ window.jsonrpc = (function(jsonrpc, undefined) {
 			return _.omit(data, 'jsonrpc');
 		};
 
-		trigger = function(event, data) {
-			if(_.isArray(events[event])) {
-				_.each(events[event], function(ev) {
-					ev(data, event);
-				});
-			}
-		};
-
-		listenForEvents = _.once(function() {
-			socket.listen(function(json) {
-				var data = deserialize(json),
-					eventName, errEventName;
-				// Responses to our requests will have an 'id' and a 'result' or 'error'
-				if(data.id) {
-					eventName = 'Flingr.Response' + data.id, 
-					errEventName = eventName + 'Flingr.Error';
-					if(data.result) {
-						trigger(eventName, data.result);
-					}
-					if(data.error) {
-						trigger(errEventName, data.error);
-					}
-					events = _.omit(events, [eventName, errEventName]);
-				}
-				// Event notifications have a 'method', and sometimes 'params'
-				if(data.method) {
-					trigger(data.method, data.params || {});
-					trigger('Flingr.Event', data);
-				}
-			});
-		});
-
 		return {
 			on: function(event, callback) {
 				if(!_.isArray(events[event])) {
@@ -85,24 +94,23 @@ window.jsonrpc = (function(jsonrpc, undefined) {
 				} else {
 					events[event].push(callback);
 				}
-				listenForEvents();
 				return this;
 			},
 			send: function(data, successCallback, errorCallback) {
 				var request = serialize(data),
-					eventName = 'Flingr.Response' + request.id, 
-					errEventName = eventName + 'Flingr.Error';
+					eventName = 'JSONRPC.Response' + request.id, 
+					errEventName = eventName + '.Error';
 				this.on(eventName, successCallback);
 				this.on(errEventName, errorCallback);
 				socket.send(request.payload);
 				return this;
 			},
 			close: function(callback) {
-				socket.close(callback);
+				socket.on('close', callback).close();
 				return this;
 			}
 		};
 	};
 	return jsonrpc;
 
-}).call(this, window.jsonrpc || {});
+}).call(this, window.jsonrpc || {}, window.ws);

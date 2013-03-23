@@ -3,7 +3,7 @@
  * @author Jim O'Brien
  */
 
-window.ws = (function(ws, window, _, undefined) {
+window.ws = (function(ws, _, undefined) {
 
 	ws = function(host, port) {
 		var socketAddress = ['ws://', host, ':', port, '/'].join(''),
@@ -11,7 +11,6 @@ window.ws = (function(ws, window, _, undefined) {
 			events = {},
 			trigger,
 			addListener;
-
 
 		trigger = function(event, data) {
 			if(_.isArray(events[event])) {
@@ -21,47 +20,43 @@ window.ws = (function(ws, window, _, undefined) {
 			}
 		};
 
-		addListener = function(event, callback) {
-			if(!events[event]) {
-				events[event] = [callback];
-			} else {
-				events[event].push(callback);
-			}
-		};
+		// Simple event wrappers
+		socket.onerror = function(error) { trigger('error', error); };
+		socket.onopen = function() { trigger('open'); };
+		socket.onmessage = function(data) { trigger('data', data.data || data); };
+		socket.onclose = function() { trigger('close'); };
 
-		socket.onerror = function(error) {
-			trigger('error', error);
-		};
-		socket.onopen = function() {
+		// Force events to fire
+		if(socket.readyState == 1) {
 			trigger('open');
-		};
-		socket.onmessage = function(data) {
-			trigger('message', data.data || data);
-		};
-		socket.onclose = function() {
+		} else if(socket.readyState == 3) {
 			trigger('close');
-		};
+		}
 
 		return {
-			open: function(callback) {
-				addListener('open', callback);
+			on: function(event, callback) {
+				if(!events[event]) {
+					events[event] = [callback];
+				} else {
+					events[event].push(callback);
+				}
 				return this;
 			},
 			close: function(callback) {
-				addListener('close', callback);
 				socket.close();
 				return this;
 			},
 			send: function(data) {
-				socket.send(data);
+				try {
+					socket.send(data);
+				} catch(e) {
+					console.error('Error sending to websocket', data);
+				}
 				return this;
-			},
-			listen: function(callback) {
-				addListener('message', callback);
 			}
 		};
 	};
 
 	return ws;
 
-}).call(this, window.ws, window, _);
+}).call(this, window.ws, _);

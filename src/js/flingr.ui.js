@@ -1,27 +1,30 @@
 /**
  * flingr Chrome App UI client
  * @author Jim O'Brien
+ * TODO: Cut out this middle man
  */
 
 window.flingrUI = (function(ui, launch, _, $, undefined) {
 
-	ui = function(hosts, launchData, callback) {
+	ui = function(connect, launchData, callback) {
 		var _this = this;
-		console.info("Launching UI", launchData, hosts);
+		console.info("Launching UI", launchData, connect);
 		launch("console.html", {
 			bounds: {
 				width: 800,
 				height: 600,
 				left: 100,
 				top: 100
-			}
+			},
+			minWidth: 520,
+			minHeight: 280
 		}, function(win) {
 			console.log("Window launched", win.contentWindow);
 			win.contentWindow.flingr = {
-				hosts: hosts
+				connect: connect
 			};
 			if(_.isFunction(callback)) {
-				callback(win.contentWindow, hosts);
+				callback(win.contentWindow, connect);
 			}
 		});
 	};

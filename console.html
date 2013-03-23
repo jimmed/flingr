@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 	<head>
 		<title>XBMC API Browser</title>
@@ -6,25 +7,32 @@
 	<body>
 		<div class="navbar navbar-fixed-top">
 			<div class="navbar-inner">
-				<div class="brand">API Browser</div>
+				<div class="brand">XBMC API Browser</div>
+				<form class="navbar-form pull-right" id="hostForm">
+					<input type="text" id="hostname" class="input-small" placeholder="pi" />
+					<input type="text" id="port" class="input-small" placeholder="9090" />
+					<button type="submit" id="connectBtn" class="btn btn-info">
+						<i class="icon-connect"></i> Connect
+					</button>
+				</form>
 			</div>
 		</div>
-		<div class="container-fluid">
-			<div class="row-fluid">
-				<div class="span6 pull-left" id="apiTree" style="overflow-y: scroll; height:77%">
-					
-				</div>
-				<div class="span6 pull-right">
-					<h2>Output</h2>
-					<div style="overflow-y: scroll; height:77%">
-						<div id="console-output">
-						</div>
-					</div>
-				</div>
+		<div class="container-fluid" data-content="home">
+			<div class="hero-unit">
+				<h1>Welcome</h1>
+				<p class="lead">
+					To get started, type in the <strong>host/IP address</strong> and <strong>port</strong> for your XBMC media center into the form above, and press the <strong>Connect</strong> button above.
+				</p>
 			</div>
 		</div>
+		<div class="container-fluid hidden" data-content="tree">
+		</div>
+
 		<script type="text/javascript" src="lib/jquery-min.js"></script>
 		<script type="text/javascript" src="lib/dust-full-1.2.2.js"></script>
+		<script type="text/javascript" src="lib/spin-min.js"></script>
+
+		<script type="text/javascript" src="src/js/flingr.spin.js"></script>
 		<script type="text/javascript" src="src/js/flingr.console.js"></script>
 	</body>
 </html>

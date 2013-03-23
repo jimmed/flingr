@@ -1,16 +1,19 @@
 /**
- * flingr Chrome App Events client
+ * flingr Chrome App Events Page
  * @author Jim O'Brien
  */
 
 (function(app, _, undefined) {
 
-	var testingData = {	Hosts: [ { "id": "Living Room", "host": "pi", "port": 9090 } ] },
-		hostData = testingData.Hosts,
-		hosts = _.map(hostData, xbmc.createHost);
+	var connectHost = function(host, port) {
+		return xbmc.createHost({
+			host: host || 'localhost',
+			port: port || 9090
+		});
+	};
 
 	app.runtime.onLaunched.addListener(function(launchData) {
-		new flingrUI(hosts, launchData);
+		new flingrUI(connectHost, launchData);
 	})
 
 }).call(this, chrome.app, _);

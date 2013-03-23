@@ -5,6 +5,35 @@
 
 (function(window, $, undefined) {
 
+	var setupConnectionHandler = function($host, connect) {
+		var $hostname = $('#hostname', $host),
+			$port = $('#port', $host);
+
+		$host.on('submit', function(ev) {
+			var hostname = $hostname.val() || $hostname.prop('placeholder'),
+				port = $port.val() || $port.prop('placeholder');
+
+			$hostname.val(hostname);
+			$port.val(port);
+			connect(hostname, port);
+			ev.preventDefault();
+			return false;
+		});
+
+		return $host;
+	};
+
+	var onConnect = function(XBMC, renderPage) {
+		var $page = renderPage('tree');
+		XBMC.introspect().done(function(tree) {
+			console.log('Introspection complete', tree, $page);
+			renderTree(tree, $page);
+		}).fail(function(error) {
+			console.error('Error introspecting', error);
+			// TODO: display error to user
+		})
+	};
+
 	var renderConsole = function(event, $console) {
 		console.info(event);
 		var $out = $('<pre>');
@@ -15,6 +44,7 @@
 			$out.append(event.data).append(JSON.stringify(event.params.data, null, 2));
 		}
 		$console.prepend($out);
+		return $out;
 	};
 
 	var renderTree = function(tree, $tree) {
@@ -74,22 +104,35 @@
 	};
 
 	$(function() {
-		var $tree = $('#apiTree'),
-			$console = $('#console-output');
-		if(!flingr && !flingr.hosts) {
-			console.warn('Background window hasn\'t provided flingr.hosts');
-		} else {
-			$.each(flingr.hosts, function(hostId, host) {
-				host.on('Flingr.Event', function(event) {
-					renderConsole(event, $console)
-				});
+		var $hostForm = $('#hostForm'),
+			$pages = $('[data-content]'),
+			renderPage;
 
-				host.api('JSONRPC.Introspect').done(function(tree) {
-					renderTree(tree, $tree);
-				}).fail(function(error) {
-					console.warn('Introspect error', error);
-				})
-			})
+		renderPage = function(pageName) {
+			console.log('Rendering page', pageName);
+			var $page = $('[data-content="' + (pageName || 'home') + '"]');
+			if($page.length) {
+				$pages.addClass('hidden');
+				$page.removeClass('hidden');
+			}
+			console.log($page);
+			return $page;
+		};
+
+		// The UI launcher adds a method to return an XBMC object given a host/port.
+		if(!flingr && !flingr.connect) {
+			console.warn('Background window hasn\'t provided connection function.');
+		} else {
+			setupConnectionHandler($hostForm, function(host, port) {
+				console.log('Connecting to', host, port);
+				flingr.connect(host, port).always(function(XBMC){
+					console.log('XBMC Connected', arguments);
+					onConnect(XBMC, renderPage);
+					XBMC.on('XBMC.Event', function() {
+						console.log('XBMC Event', arguments);
+					});
+				});
+			});
 		}
 	});
 

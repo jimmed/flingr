@@ -3,13 +3,13 @@
  * @author Jim O'Brien
  */
 
-window.xbmc = (function(xbmc, undefined) {
+window.xbmc = (function(xbmc, $, undefined) {
 
 	var XBMC = function(options) {
 		_.extend(this, options);
 		this.jsonrpc = jsonrpc(this.host, this.port);
 		this.events = {};
-		this.subscribeEvents();
+		this.subscribeEvents.call(this);
 		return this;
 	};
 
@@ -33,20 +33,20 @@ window.xbmc = (function(xbmc, undefined) {
 
 	XBMC.prototype.subscribeEvents = function(events) {
 		var _this = this;
-		this.jsonrpc.on('Flingr.Event', function(data) {
-			_this.triggerEvent(data.method, data.params || {});
-			_this.triggerEvent('Flingr.Event', data || {});
+		this.jsonrpc.on('JSONRPC.Event', function(data) {
+			_this.trigger(data.method, data.params || {});
+			_this.trigger('XBMC.Event', data || {});
 		});
-		console.log('Subscribed to events from ', this.host);
 	};
 
-	XBMC.prototype.triggerEvent = function(event, params) {
+	XBMC.prototype.trigger = function(event, params) {
+		console.log('XBMC Event', event, params);
 		if(_.isArray(this.events[event])) {
-			console.log('Triggering XBMC event', event);
 			_.each(this.events[event], function(ev) {
-				ev(params, host, event);
+				ev(params, event);
 			});
 		}
+		return this;
 	};
 
 	XBMC.prototype.on = function(event, callback) {
@@ -57,6 +57,7 @@ window.xbmc = (function(xbmc, undefined) {
 				this.events[event] = [callback];
 			}
 		}
+		return this;
 	};
 
 	XBMC.prototype.off = function(event, callback) {
@@ -69,15 +70,30 @@ window.xbmc = (function(xbmc, undefined) {
 				this.events[event] = [];
 			}
 		} else {
-			this.events = {};
 		}
+		return this;
 	};
 
 	xbmc.createHost = function(hostOptions) {
-		return new XBMC(hostOptions);
+		var promise = $.Deferred(),
+			host = new XBMC(hostOptions);
+
+		if(host && host.on) {
+			host.jsonrpc.on('JSONRPC.Connected', function() {
+				console.log('CONNECTED!');
+				promise.resolve(host);
+			});
+			host.jsonrpc.on('JSONRPC.SocketError', function(error) {
+				console.error('Connection failed', error);
+				promise.reject(error)
+			});
+		} else {
+			promise.reject();
+		}
+		return promise.promise();
 	};
 
 	return xbmc;
 
-}).call(this, window.xbmc || {});
+}).call(this, window.xbmc || {}, jQuery);
 console.log("XBMC loaded", xbmc);
