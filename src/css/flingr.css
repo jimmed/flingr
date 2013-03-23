@@ -1192,5 +1192,5 @@ a.label:hover,a.label:focus,a.badge:hover,a.badge:focus{color:#ffffff;text-decor
 	left: 0;
 	right: 0;
 	padding-top: 1em;
-	overflow-y: scroll;
+	overflow-y: auto;
 }
