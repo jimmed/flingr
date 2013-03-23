@@ -124,13 +124,25 @@
 			console.warn('Background window hasn\'t provided connection function.');
 		} else {
 			setupConnectionHandler($hostForm, function(host, port) {
+				var $controls = $('input, button', $hostForm),
+					$button = $('button', $hostForm);
+
+				$controls.prop('disabled', true);
 				console.log('Connecting to', host, port);
+
 				flingr.connect(host, port).always(function(XBMC){
-					console.log('XBMC Connected', arguments);
+					$button.text('Connected').removeClass('btn-info').addClass('btn-success');
+					$controls.prop('disabled', false);
+					
+					console.log('XBMC Connected', XBMC);
+					
 					onConnect(XBMC, renderPage);
+					
 					XBMC.on('XBMC.Event', function() {
 						console.log('XBMC Event', arguments);
 					});
+
+					// TODO: Handle disconnection
 				});
 			});
 		}
