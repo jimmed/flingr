@@ -1,0 +1,18 @@
+{
+	"name": "Flingr Alpha",
+	"version": "0.1.0",
+	"manifest_version": 2,
+	"app": { 
+		"background": {
+			"scripts": [
+				"lib/underscore-min.js",
+				"lib/jquery-min.js",
+				"src/js/websockets.js",
+				"src/js/jsonrpcws.js",
+				"src/js/xbmc.js",
+				"src/js/flingr.ui.js",
+				"src/js/flingr.appevents.js"
+			]
+		}
+	}
+}
