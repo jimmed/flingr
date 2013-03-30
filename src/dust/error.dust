@@ -1,0 +1,4 @@
+<div class="alert alert-error">
+	{?title}<h4>{title}</h4>{/title}
+	{message|s}
+</div>

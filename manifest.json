@@ -10,7 +10,7 @@
 				"src/js/websockets.js",
 				"src/js/jsonrpcws.js",
 				"src/js/xbmc.js",
-				"src/js/flingr.ui.js",
+				"src/js/flingr.ui.loader.js",
 				"src/js/flingr.appevents.js"
 			]
 		}

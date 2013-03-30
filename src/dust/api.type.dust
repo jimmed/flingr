@@ -1,0 +1,33 @@
+{?$ref}
+	<a href="#{$ref|a}">{$ref}</a>
+{:else}
+	{?enums}
+		Enumerable: 
+		<ul>
+			{#enums}<li>
+				<code>{.|js}</code>
+				{?default}
+					{@eq key=default value=.} <span class="small muted">(default)</span>{/eq}
+				{/default}
+			</li>{/enums}
+		</ul>
+	{:else}
+		{?type}
+			{?type.push}
+				{#type}
+					{@select key="{.type}"}
+						{@eq value="array"}
+							<code>[{>"dust.api.type" /}]</code>
+						{/eq}
+						{@default}<code>{?selectKey}{.selectKey|js}{:else}<strong class="muted">null</strong>{/selectKey}</code>	{/default}
+					{/select}
+					{@sep} / {/sep}
+				{/type}
+			{:else}
+				{type}
+			{/type.push}
+		{:else}
+			<strong class="muted">null</strong>
+		{/type}
+	{/enums}
+{/$ref}

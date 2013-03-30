@@ -1,0 +1,63 @@
+{?introspection}{#introspection}
+	<dl class="dl-horizontal">
+		<dt>Description</dt>
+		<dd>
+			{?id}<a href="{id}" target="_blank">{/id}
+			{description}
+			{?id}</a>{/id}
+		</dd>
+		{?version}
+			<dt>Version</dt>
+			<dd>{version}</dd>
+		{/version}
+	</dl>
+
+	<div class="accordion" id="IntrospectionResults">
+		<div class="accordion-group">
+			<div class="accordion-heading">
+				<a class="accordion-toggle" data-toggle="collapse" data-parent="#IntrospectionResults" href="#CollapseMethods">
+					Methods
+				</a>
+			</div>
+			<div class="accordion-body collapse" id="CollapseMethods">
+				<div class="accordion-inner">
+					{>"dust.api.accordion"
+						tree=methods
+						tree_id="Methods" /}
+				</div>
+			</div>
+		</div>
+		<div class="accordion-group">
+			<div class="accordion-heading">
+				<a class="accordion-toggle" data-toggle="collapse" data-parent="#IntrospectionResults" href="#CollapseNotifications">
+					Notifications
+				</a>
+			</div>
+			<div class="accordion-body collapse" id="CollapseNotifications">
+				<div class="accordion-inner">
+					{>"dust.api.accordion"
+						tree=notifications
+						tree_id="Notifications" /}
+				</div>
+			</div>
+		</div>
+		<div class="accordion-group">
+			<div class="accordion-heading">
+				<a class="accordion-toggle" data-toggle="collapse" data-parent="#IntrospectionResults" href="#CollapseTypes">
+					Types
+				</a>
+			</div>
+			<div class="accordion-body collapse" id="CollapseTypes">
+				<div class="accordion-inner">
+					{>"dust.api.accordion"
+						tree=types
+						tree_id="Types" /}
+				</div>
+			</div>
+		</div>
+	</div>
+{:else}
+	<div class="alert alert-warning">
+		<i class="icon-exclamation-sign"></i> No introspection data returned.
+	</div>
+{/introspection}{/introspection}

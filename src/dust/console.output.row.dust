@@ -1,0 +1,26 @@
+<tr>
+	<td>
+		{?action}
+			{@select key=action}
+				{@eq value="request"}<i class="icon-arrow-right" title="Request to host"></i>{/eq}
+				{@eq value="response"}<i class="icon-arrow-left" title="Response from host"></i>{/eq}
+				{@eq value="notification"}<i class="icon-exclamation-sign" title="Notification from host"></i>{/eq}
+				{@default}<i class="icon-question-sign" title="Unknown/other event"></i>{/default}
+			{/select}
+		{:else}
+			<i class="icon-question-sign"></i>
+		{/action}
+	</td>
+	<td>
+		{?method}
+			{method}
+		{/method}
+	</td>
+	<td>
+		{?data}
+			<pre>{data|js}</pre>
+		{:else}
+			<em class="muted">none</em>
+		{/data}
+	</td>
+</tr>

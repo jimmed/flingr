@@ -1185,12 +1185,13 @@ a.label:hover,a.label:focus,a.badge:hover,a.badge:focus{color:#ffffff;text-decor
 	margin-left: auto;
 	margin-right: auto;
 }
-.container-fluid[data-content] {
+.row-fluid[data-content] {
 	position: absolute;
 	top: 50px;
 	bottom: 0;
-	left: 0;
-	right: 0;
+	left: 1em;
+	max-width: 96%;
 	padding-top: 1em;
-	overflow-y: auto;
+	padding-right: 1em;
+	overflow: auto;
 }

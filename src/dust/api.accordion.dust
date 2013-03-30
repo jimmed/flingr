@@ -1,0 +1,54 @@
+<div class="accordion" id="{tree_id|a}">
+	{@object input=tree}
+		<div class="accordion-group">
+			<div class="accordion-heading">
+				<a class="accordion-toggle" data-toggle="collapse" data-parent="#{tree_id|a}" href="#{tree_id|a}{key|a}">
+					{key}
+				</a>
+			</div>
+			<div class="accordion-body collapse" id="{tree_id|a}{key|a}">
+				<div class="accordion-inner">
+					{?value}
+						<dl class="dl-horizontal">
+							{#value}
+								{?.description}
+									<dt>Description</dt><dd>{.description}</dd>
+								{:else}
+									<dt>JSON</dt><dd><pre>{value|js}</pre></dd>
+								{/.description}
+
+								{?.params}
+									<dt>Parameters</dt>
+									<dd>
+										<dl class="dl-horizontal">
+											{#params}
+												<dt>
+													{^required}<em>{/required}
+													{name}
+													{^required}</em>{:else}*{/required}
+												</dt>
+												<dd>
+													{>"dust.api.type" /}
+												</dd>
+											{/params}
+										</dl>
+									</dd>
+								{/.params}
+
+								{?.$ref}
+									<dt>Referenced Type</dt>
+									<dd>{>"dust.api.type" /}</dd>
+								{:else}
+									{?.type}
+										<dt>Type</dt>
+										<dd>{>"dust.api.type" /}</dd>
+									{/.type}
+								{/.$ref}
+							{/value}
+						</dl>
+					{/value}
+				</div>
+			</div>
+		</div>
+	{/object}
+</div>

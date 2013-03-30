@@ -1,0 +1,16 @@
+<table id="ConsoleOutputTable" class="table">
+	<thead>
+		<tr>
+			<th></th>
+			<th>Method</th>
+			<th>Data</th>
+		</tr>
+	</thead>
+	<tbody id="ConsoleOutputBody">
+		<td class="empty-table-notice" colspan="4">
+			<div class="alert alert-info center">
+				<em>Requests will appear here as they are sent/received.</em>
+			</div>
+		</td>
+	</tbody>
+</table>

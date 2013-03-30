@@ -1,0 +1,6 @@
+<div id="ConsoleInput">
+	{>"dust.console.input" /}
+</div>
+<div id="ConsoleOutput">
+	{>"dust.console.output" /}
+</div>

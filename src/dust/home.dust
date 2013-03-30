@@ -1,0 +1,10 @@
+<div class="hero-unit">
+	<h1>Welcome</h1>
+	<p class="lead">
+		To get started, type in the <strong>host/IP address</strong> and <strong>port</strong> for your XBMC media center into the form above, and press the <strong>Connect</strong> button above.
+	</p>
+	<div class="alert alert-info">
+		<i class="icon-exclamation-sign"></i> 
+		Please note, you will need <strong>JSONRPC</strong> (via WebSockets) enabled on your XBMC host to use this feature. The default port for this is <em>not</em> the same as the HTTP API!
+	</div>
+</div>

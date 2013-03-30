@@ -13,7 +13,7 @@
 	};
 
 	app.runtime.onLaunched.addListener(function(launchData) {
-		new flingrUI(connectHost, launchData);
+		new flingr.uiLoader(connectHost, launchData);
 	})
 
 }).call(this, chrome.app, _);

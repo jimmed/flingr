@@ -36,7 +36,6 @@ window.jsonrpc = (function(jsonrpc, ws, undefined) {
 						trigger(eventName, data.result);
 					}
 					if(data.error) {
-						console.error('JSONRPC error', error);
 						trigger(errEventName, data.error);
 					}
 					events = _.omit(events, [eventName, errEventName]);
@@ -51,8 +50,8 @@ window.jsonrpc = (function(jsonrpc, ws, undefined) {
 				}
 			});
 			socket.on('open', function() { trigger('JSONRPC.Connected') });
-			socket.on('close', function() { trigger('JSONRPC.Disconnected') });
-			socket.on('error', function(error) { trigger('JSONRPC.SocketError', error) });
+			socket.on('close', function() { console.log('Socket closed.', arguments); trigger('JSONRPC.Disconnect', arguments) });
+			socket.on('error', function(error) { console.log('Socket error.', error); trigger('JSONRPC.SocketError', error) });
 		});
 		listenForEvents();
 
@@ -81,7 +80,7 @@ window.jsonrpc = (function(jsonrpc, ws, undefined) {
 			if(data.jsonrpc !== '2.0') {
 				throw new Exception("Response is not JSONRPC v2.0", data.jsonrpc);
 			}
-			if(!data.result && !data.method && !data.error) {
+			if(data.result === undefined && data.method === undefined && data.error === undefined) {
 				throw new Exception("JSONRPC response has no result, method or error", data);
 			}
 			return _.omit(data, 'jsonrpc');
@@ -96,12 +95,23 @@ window.jsonrpc = (function(jsonrpc, ws, undefined) {
 				}
 				return this;
 			},
-			send: function(data, successCallback, errorCallback) {
+			send: function(data, successCallback, errorCallback, ttl) {
 				var request = serialize(data),
 					eventName = 'JSONRPC.Response' + request.id, 
-					errEventName = eventName + '.Error';
-				this.on(eventName, successCallback);
-				this.on(errEventName, errorCallback);
+					errEventName = eventName + '.Error',
+					timeout;
+				
+				if(ttl) {
+					timeout = setTimeout(_.partial(errorCallback, 'Timeout exceeded.'), ttl * 1000);
+				}
+				this.on(eventName, function() {
+					if(timeout) clearTimeout(timeout);
+					successCallback.apply(this, arguments);
+				});
+				this.on(errEventName, function() {
+					if(timeout) clearTimeout(timeout);
+					errorCallback.apply(this, arguments);
+				});
 				socket.send(request.payload);
 				return this;
 			},
