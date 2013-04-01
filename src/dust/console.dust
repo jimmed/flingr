@@ -1,5 +1,5 @@
 <div id="ConsoleInput">
-	{>"dust.console.input" /}
+{!	{>"dust.console.input" /} !}
 </div>
 <div id="ConsoleOutput">
 	{>"dust.console.output" /}

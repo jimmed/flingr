@@ -1,0 +1,9 @@
+<form class="form-horizontal">
+	<fieldset id="MethodSelector">
+		<legend>Select API Method</legend>
+		{>"dust.console.input.form.methodSelector" /}
+	</fieldset>
+	<fieldset id="Parameters">
+		{>"dust.console.input.form.parameters" /}
+	</fieldset>
+</form>

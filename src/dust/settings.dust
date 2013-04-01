@@ -1,0 +1,27 @@
+<form class="form-horizontal" id="SettingsForm">
+	<div class="control-group">
+		<label class="control-label" for="AutoConnect">
+			Auto-connect<br />
+			<small>Connect to this host automatically on startup</small>
+		</label>
+		<div class="controls">
+			<input type="text" name="AutoConnectHost" id="AutoConnectHost" value="{AutoConnectHost}" class="small" placeholder="Host/IP" /> 
+			<input type="text" name="AutoConnectPort" id="AutoConnectPort" value="{AutoConnectPort}" class="input-small" placeholder="9090" />
+		</div>
+	</div>
+	{!<div class="control-group">
+		<label class="control-label" for="AutoConnect">
+			Show Desktop Notifications<br />
+			<small>Select the events for which an event will be fired</small>
+		</label>
+		<div class="controls">
+			<select name="Notifications" id="Notifications" multiple>
+				{@each input=Notifications}
+					<option value="{key}"{?value} checked{/value}>{key}</option>
+				{/each}
+			</select>
+		</div>
+	</div>!}
+</form>
+
+<pre>{.|js}</pre>

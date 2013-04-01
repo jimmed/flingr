@@ -1,5 +1,5 @@
 <div class="accordion" id="{tree_id|a}">
-	{@object input=tree}
+	{@each input=tree}
 		<div class="accordion-group">
 			<div class="accordion-heading">
 				<a class="accordion-toggle" data-toggle="collapse" data-parent="#{tree_id|a}" href="#{tree_id|a}{key|a}">
@@ -20,7 +20,7 @@
 								{?.params}
 									<dt>Parameters</dt>
 									<dd>
-										<dl class="dl-horizontal">
+										<dl>
 											{#params}
 												<dt>
 													{^required}<em>{/required}
@@ -50,5 +50,5 @@
 				</div>
 			</div>
 		</div>
-	{/object}
+	{/each}
 </div>

@@ -1,0 +1,28 @@
+{?episodedetails}
+	<div class="episodedetails">
+		<div class="showtitle">
+			{episodedetails.showtitle}
+		</div>
+		<div class="episodetitle">
+			{#episodedetails}
+				<div class="episode label label-info">
+					{season}x{episode}
+				</div> 
+			{/episodedetails}
+			{label}
+		</div>
+	</div>
+{:else}
+	{?moviedetails}
+		<div class="moviedetails">
+			<div class="movietitle">{label}</div>
+			{#moviedetails}
+				<div class="movieyear">{year}</div>
+			{/moviedetails}
+		</div>
+	{:else}
+		<div class="details">
+			<div class="medialabel">{label}</div>
+		</div>
+	{/moviedetails}
+{/episodedetails}

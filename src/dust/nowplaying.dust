@@ -1,0 +1,39 @@
+{?player}
+	<div class="navbar-inner">
+		<div class="container">
+			<a class="brand span1 center" id="state">
+				{@gt key=player.speed value=0}
+					<i class="icon-large icon-play"></i>
+				{:else}
+					<i class="icon-large icon-pause"></i>
+				{/gt}
+			</a>
+
+			<div id="item" class="span3">
+				{>"dust.xbmc.item":player.item /}
+			</div>
+
+			<div id="progressBar" class="span6">
+				<div class="progress" id="seeker">
+					<div class="bar bar-striped bar-success" style="width: {player.percentage}%" id="percentage"></div>
+				</div>
+				<div class="pull-left small" id="time">
+					{>"dust.xbmc.time":player.time /}
+				</div>
+				<div class="pull-right small" id="totaltime">
+					{>"dust.xbmc.time":player.totaltime /}
+				</div>
+			</div>
+
+			<div id="volumeControl" class="span2">
+				{?volume}
+					{?volume.muted}
+						<i class="icon-volume-muted"></i>
+					{:else}
+						<i class="icon-volume-full"></i>
+					{/volume.muted}
+				{/volume}
+			</div>
+		</div>
+	</div>
+{/player}

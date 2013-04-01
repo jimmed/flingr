@@ -1,0 +1,36 @@
+<dl class="dl-horizontal">
+	<dt>Description</dt>
+	<dd>{description}</dd>
+	<dt>Parameters</dt>
+	<dd>
+		{?params}
+			<dl>
+			{#params}
+				<dt>{.name}{?required}*{/required}</dt>
+				<dd>
+					{?.resolvedType}
+						<span class="label">{.type}</span> 
+					{/.resolvedType}
+					{.description}
+				</dd>
+			{/params}
+			</dl>
+		{:else}
+			<span class="muted">None</span>
+		{/params}
+	</dd>
+	<dt>Returns</dt>
+	<dd>
+		{?returns}
+			{?returns.type}
+				<span class="label">{returns.type}</span> 
+			{/returns.type}
+			{?returns.$ref}
+				<span class="label label-info">{returns.$ref}</span> 
+			{/returns.$ref}
+			{returns.description}
+		{:else}
+			<span class="muted">None</span>
+		{/returns}
+	</dd>
+</dl>

@@ -32,18 +32,19 @@
 			return promise.promise();
 		},
 		setupBrowserHandlers = function($page, XBMC) {
-			var $consoleInput = $('#ConsoleInput', $page),
+			var $apiInput = $('#ConsoleInput', $page),
 				$consoleOutput = $('#ConsoleOutput', $page),
 				$consoleBody = $('#ConsoleOutputBody', $consoleOutput),
+				$apiForm = $('form', $apiInput),
+				$settings = $('#SettingsForm', $page),
 				addConsoleRow = function(row) {
-					console.log('Adding row', row);
 					$('.empty-table-notice', $consoleBody).hide();
 					return render('console.output.row', row, $consoleBody, false).fail(function(error) {
 						console.error(error);
 					});
 				};
 
-			addConsoleRow({action: 'notification', method: 'JSONRPC.Ready'});
+			// Subscribe to events from our XBMC host
 			XBMC.on('XBMC.Event', function(params, event) {
 				if(params.method && params.params) {
 					addConsoleRow({action: 'notification', method: params.method, data: params.params.data})
@@ -59,12 +60,17 @@
 					addConsoleRow({action: 'response', method: params.method, data: params.result})
 				}
 			});
-		};
+
+			// Add a listener for our API command form
+			var formParams = {}
+			setupApiForm($apiForm, XBMC.api).find('select:eq(0)').trigger('change');
+			setupSettingsForm($settings);
+		},
 		setupConnectionHandler = function($host, connect) {
 			var $hostname = $('#hostname', $host),
 				$port = $('#port', $host);
 
-			$host.on('submit', function(ev) {
+			$host.one('submit', function(ev) {
 				var hostname = $hostname.val() || $hostname.prop('placeholder'),
 					port = $port.val() || $port.prop('placeholder');
 
@@ -77,37 +83,126 @@
 
 			return $host;
 		},
+		setupApiForm = function($form, api, inputData, noRedraw) {
+			var $ms = $('#MethodSelector', $form),
+				$params = $('#Parameters', $form),
+				defaults = {},
+				data;
+
+			// Extract defaults from the API
+			$.each(api, function(method){
+				defaults['Method'] = method;
+				$.each(api[method], function(methodGroup) {
+					defaults['MethodGroup'] = methodGroup;
+				})
+				return false;
+			});
+
+			// Overwrite defaults with input data
+			data = $.extend({}, defaults, inputData);
+			
+			// Update the method selector
+			$ms.on('change', 'select', function(event) {
+				var context = {api:api},
+					$fields = $('select', $ms),
+					paramContext;
+
+				$fields.each(function() {
+					data[$(this).prop('id')] = $(this).val();
+				});
+				$.extend(context, data);
+				if(context.MethodGroup) {
+					context.selectedMethodGroup = api[context.MethodGroup];
+					if(context.Method) {
+						context.selectedMethod = context.selectedMethodGroup[context.Method];
+					}
+				}
+
+				render('console.input.form.methodSelector', context, $ms, true).done(function() {
+					setupApiForm($form, api, data, true);
+				});
+				if(context.selectedMethod) {
+					paramContext = {params: context.selectedMethod};
+					render('console.input.form.parameters', paramContext, $params, true);
+				}
+				if(event) event.preventDefault();
+			});
+
+			$form.on('submit', function(event) {
+				event.preventDefault();
+				console.log(data);
+				return false;
+			});
+			return $form;
+		},
+		setupSettingsForm = function($form) {
+			console.log('Setting up', $form);
+			$form.on('change', 'input, select', function(event) {
+				var $field = $(this),
+					key = $field.prop('id'),
+					value = $field.val(),
+					updates = {};
+
+				if($field.prop('type') == 'checkbox') {
+					value = value === 'on';
+				}
+
+				updates[key] = value;
+				flingr.settings.set(updates).done(function() {
+					flingr.settings.getAll().done(function(values) {
+						render('settings', values, '#settings', true).done(function() {
+							setupSettingsForm($form);
+						});
+					});
+				});
+			})
+			return $form;
+		},
 		onConnect = function(XBMC, renderPage) {
+			var getSettings = flingr.settings.getAll();
+			console.log('Connection established');
 			window.flingr.activeHost = XBMC;
 			XBMC.introspect().done(function(host) {
-				console.log('Introspection complete', host);
-				renderPage('browser', {api: host}).done(function($page) {
-					setupBrowserHandlers($page, host);
+				getSettings.done(function(settings) {
+					var context = {
+							api: host,
+							settings: settings
+						};
+					console.log('Context', context);
+					renderPage('browser', context).done(function($page) {
+						setupBrowserHandlers($page, host);
+						new flingr.nowPlaying(host, '#remote', render);
+					});
 				});
 			}).fail(function(error) {
 				console.error('Error introspecting', error);
 			})
 		},
-		onError = function(error) {
-			render('error', error, '[data-content]');
+		onDisconnect = function(error) {
+			render('home', {error: error}, '[data-content]', true);
 		};
 
 	$(function() {
-		var $hostForm = $('#hostForm');
-
-		// The UI launcher adds a method to return an XBMC object given a host/port.
-		if(!flingr && !flingr.connect) {
-			console.warn('Background window hasn\'t provided connection function.');
-		} else {
-			setupConnectionHandler($hostForm, function(host, port) {
-				var $controls = $('input, button', $hostForm),
-					$button = $('button', $hostForm);
-
+		var $hostForm = $('#hostForm'),
+			$controls = $('input, button', $hostForm),
+			$button = $('button', $hostForm),
+			disconnect = function(error) {
+				console.log('Disconnect');
+				$button.removeClass('btn-success').addClass('btn-info').text('Connect').prop('disabled', false);
+				$controls[0].focus();
+				onDisconnect(error);
+				setupConnectionHandler($hostForm, connect);
+			},
+			connect = function(host, port) {
 				$controls.prop('disabled', true);
 				console.log('Connecting to', host, port);
 
 				flingr.connect(host, port).done(function(XBMC){
 					$button.text('Connected').removeClass('btn-info').addClass('btn-success');
+					$hostForm.off('submit').on('submit', function(ev) {
+						ev.preventDefault();
+						disconnect();
+					});
 					$controls.prop('disabled', false);
 					
 					console.log('XBMC Connected', XBMC);
@@ -118,17 +213,21 @@
 						console.log('XBMC Event', arguments);
 					});
 
+					XBMC.on('JSONRPC.Disconnect', disconnect)
+
 					// TODO: Handle disconnection
-				}).fail(function(error) {
-					$button.removeClass('btn-success').addClass('btn-info').prop('disabled', false);
-					$controls[0].focus();
-					if(error && error[1]) {
-						onError({
-							title: 'Connection Error', 
-							message: 'Could not connect to <strong>' + host + '</strong> on port <strong>' + port + '</strong>.'
-						});
-					}
-				});
+				}).fail(disconnect);
+			};
+
+		// The UI launcher adds a method to return an XBMC object given a host/port.
+		if(!flingr && !flingr.connect) {
+			console.warn('Background window hasn\'t provided connection function.');
+		} else {
+			setupConnectionHandler($hostForm, connect);
+			flingr.settings.get(['AutoConnectHost','AutoConnectPort']).done(function(settings) {
+				if(settings.AutoConnectHost && settings.AutoConnectPort) {
+					connect(settings.AutoConnectHost, settings.AutoConnectPort);
+				}
 			});
 			renderPage('home');
 		}

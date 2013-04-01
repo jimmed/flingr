@@ -24,7 +24,7 @@
 					{@sep} / {/sep}
 				{/type}
 			{:else}
-				{type}
+				<pre>{type|js}</pre>
 			{/type.push}
 		{:else}
 			<strong class="muted">null</strong>
