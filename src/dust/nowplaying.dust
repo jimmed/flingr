@@ -1,40 +1,58 @@
 {?player}
 	<div class="navbar-inner">
-		<div class="container">
-			<a class="brand span1 center" id="state">
-				{@gt key=player.speed value=0}
-					<i class="icon-large icon-play" id="btnPlay"></i>
-				{:else}
-					<i class="icon-large icon-pause" id="btnPause"></i>
-				{/gt}
-				<i class="icon-large icon-stop" id="btnStop"></i>
-			</a>
+		<ul class="nav">
+			{@gt key=player.speed value=0}
+				<li class="span1">
+					<a href="#" id="btnPlay">
+						<i class="icon-play"></i>
+					</a>
+				</li>
+			{:else}
+				<li class="span1 active">
+					<a href="#" id="btnPause">
+						<i class="icon-pause"></i>
+					</a>
+				</li>
+			{/gt} 
+			<li class="span1">
+				<a href="#" id="btnStop">
+					<i class="icon-stop" id="btnStop"></i>
+				</a>
+			</li>
 
-			<div id="item" class="span3">
-				{>"dust.xbmc.item":player.item /}
-			</div>
+			<li id="item" class="span3">
+				<a href="#" id="btnNowPlaying">
+					{>"dust.xbmc.item":player.item /}
+				</a>
+			</li>
 
-			<div id="progressBar" class="span6">
-				<div class="progress" id="seeker">
-					<div class="bar bar-striped bar-success" style="width: {player.percentage}%" id="percentage"></div>
-				</div>
-				<div class="pull-left small" id="time">
-					{>"dust.xbmc.time":player.time /}
-				</div>
-				<div class="pull-right small" id="totaltime">
-					{>"dust.xbmc.time":player.totaltime /}
-				</div>
-			</div>
+			<li id="progressBar" class="span6">
+				<a href="#">
+					<div id="seeker"></div>
+					<div class="pull-left small" id="time">
+						{>"dust.xbmc.time":player.time /}
+					</div>
+					<div class="pull-right small" id="totaltime">
+						{>"dust.xbmc.time":player.totaltime /}
+					</div>
+				</a>
+			</li>
 
-			<div id="volumeControl" class="span2">
-				{?volume}
-					{?volume.muted}
-						<i class="icon-volume-muted"></i>
-					{:else}
-						<i class="icon-volume-full"></i>
-					{/volume.muted}
-				{/volume}
-			</div>
-		</div>
+			<li class="span1">
+				<a href="#" id="muteControl">
+					{?volume}
+						{?volume.muted}
+							<i class="icon-volume-off"></i>
+						{:else}
+							{@gt key=volume.volume value=50}
+								<i class="icon-volume-up"></i>
+							{:else}
+								<i class="icon-volume-down"></i>
+							{/gt}
+						{/volume.muted}
+					{/volume}
+				</a>
+			</li>
+		</ul>
 	</div>
 {/player}

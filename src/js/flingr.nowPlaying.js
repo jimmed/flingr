@@ -6,32 +6,38 @@ window.flingr = window.flingr || {};
 window.flingr.nowPlaying = (function(nowPlaying, $, _, undefined) {
 
 	nowPlaying = function(host, element, renderer) {
-		var _this = this;
 		this.host = host;
 		this.context = {};
 		this.$elem = $(element);
 		this.renderer = renderer;
 		this.update();
+		this.originalBottom = parseInt($('[data-content]').css('bottom'), 10) || 0;
 	};
 
 	nowPlaying.prototype.render = function() {
 		var _this = this;
-		return _this.renderer('nowplaying', _this.context, _this.$elem, true);
+		return _this.renderer('nowplaying', _this.context, _this.$elem, true).done(function() {
+			$('[data-content]').css({bottom: (_this.originalBottom + _this.$elem.height()) + 'px'});
+		});
 	};
 
 	nowPlaying.prototype.getActivePlayer = function() {
 		var _this = this,
 			promise = $.Deferred();
+
 		_this.host.api.Player.GetActivePlayers.send().done(function(players) {
-			if(players && players.length) {
-				_this.context.player = players[0];
-				$.when(_this.getPlayerData(), _this.getPlayingItemData()).done(function() {
+			_this.host.api.Application.GetProperties.send({properties: ['volume', 'muted']}).done(function(volume) {
+				_this.context.volume = volume;
+				if(players && players.length) {
+					_this.context.player = players[0];
+					$.when(_this.getPlayerData(), _this.getPlayingItemData()).done(function() {
+						promise.resolve();
+					});
+				} else {
+					delete _this.context.player;
 					promise.resolve();
-				});
-			} else {
-				delete _this.context.player;
-				promise.resolve();
-			}
+				}
+			});
 		}).fail(function() {
 			delete _this.context.player;
 			promise.resolve();
@@ -46,6 +52,16 @@ window.flingr.nowPlaying = (function(nowPlaying, $, _, undefined) {
 			properties: ['canseek', 'currentaudiostream', 'live', 'speed', 'time', 'totaltime', 'percentage', 'type']
 		}).done(function(data) {
 			_.extend(_this.context.player, data);
+			console.log(_this.context, data);
+			_this.context.player.totalSeconds = 
+				data.totaltime.hours * 3600 +
+				data.totaltime.minutes * 60 +
+				data.totaltime.seconds;
+			_this.context.player.seconds = 
+				data.time.hours * 3600 +
+				data.time.minutes * 60 +
+				data.time.seconds;
+			console.log(_this.context);
 		});
 	};
 
@@ -89,13 +105,17 @@ window.flingr.nowPlaying = (function(nowPlaying, $, _, undefined) {
 
 	nowPlaying.prototype.update = function() {
 		var _this = this,
+			updateTick,
 			updateThenRender = function(changes) {
 				var promise = $.Deferred();
-				_.extend(_this.context, changes || {});
-				console.log('Now Playing Updating...');
+
+				if(updateTick) {
+					clearInterval(updateTick);
+				}
+				_.extend(true, _this.context, changes || {});
+				_this.render().done(setupUiHandlers);
 				_this.getActivePlayer().always(function() {
-					console.log('Now Playing updated', _this.context);
-					_this.render().pipe(promise).always(setupUiHandlers);
+					_this.render().pipe(promise).done(setupUiHandlers);
 				});
 				return promise.promise();
 			},
@@ -104,31 +124,50 @@ window.flingr.nowPlaying = (function(nowPlaying, $, _, undefined) {
 					$btnPlayPause = $('#btnPlay, #btnPause', $elem),
 					$btnStop = $('#btnStop', $elem)
 					$seeker = $('#seeker', $elem),
+					$volume = $('#volumeLevel', $elem),
 					api = _this.host.api.Player,
 					player = _this.context.player;
 
-				$btnPlayPause.one('click', function(event) {
-					api.PlayPause.send({playerid: player.playerid});
-					event.preventDefault();
-				});
-
-				$btnStop.one('click', function(event) {
-					api.Stop.send({playerid: player.playerid});
-					event.preventDefault();
-				});
-
-				$seeker.on('mousemove', function(evMove) {
-					console.log('Move', evMove);
-				}).on('mousedown', function(evDown) {
-					console.log('Down', evDown);
-
-					$seeker.one('mouseup', function(evUp) {
-						console.log('Up', evUp);
-						$seeker.off('mousemove');
-						evUp.preventDefault();
+				if(player) {
+					// Play/pause button
+					$btnPlayPause.one('click', function(event) {
+						api.PlayPause.send({playerid: player.playerid});
+						event.preventDefault();
 					});
-					evDown.preventDefault();
-				});
+
+					// Stop button
+					$btnStop.one('click', function(event) {
+						api.Stop.send({playerid: player.playerid});
+						event.preventDefault();
+					});
+
+					// Seeker
+					$seeker.slider({
+						max: player.totalSeconds,
+						step: 1,
+						value: player.seconds
+					}).on('slide', function(event) {
+						var seconds = event.value,
+							hours = Math.floor(seconds / 3600),
+							minutes;
+
+						seconds -= hours * 3600;
+						minutes = Math.floor(seconds / 60);
+						seconds -= minutes * 60;
+
+						api.Seek.send({
+							playerid: player.playerid,
+							value: (event.value / player.totalSeconds) * 100
+						});
+					});
+					if(player.speed) {
+						updateTick = setInterval(function() {
+							$seeker.slider('setValue', ++player.seconds);
+						}, 1000 / player.speed);
+					}
+
+					$('#progressBar .slider', $elem).css({width: '100%'});
+				}
 			};
 
 		// Update, then render
@@ -142,14 +181,15 @@ window.flingr.nowPlaying = (function(nowPlaying, $, _, undefined) {
 			})
 			.on('Player.OnPlay', function(changes) {
 				console.log('Play caught', changes);
-				updateThenRender();
+				updateThenRender({player: changes});
 			})
 			.on('Player.OnPause', function(changes) {
 				console.log('Pause caught', changes);
-				updateThenRender();
+				updateThenRender({player: changes});
 			})
 			.on('Player.OnStop', function(changes) {
 				console.log('Stop caught', changes);
+				delete _this.context.player;
 				updateThenRender();
 			})
 			.on('Player.OnPropertyChanged', function(changes) {
@@ -158,7 +198,7 @@ window.flingr.nowPlaying = (function(nowPlaying, $, _, undefined) {
 			})
 			.on('Player.OnSeek', function(changes) {
 				console.log('Seek caught', changes);
-				updateThenRender();
+				updateThenRender({player: changes});
 			})
 			.on('JSONRPC.Disconnect', function() {
 				_this.context = {};
