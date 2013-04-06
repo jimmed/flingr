@@ -25,7 +25,7 @@ window.flingr.nowPlaying = (function(nowPlaying, $, _, undefined) {
 		_this.host.api.Player.GetActivePlayers.send().done(function(players) {
 			if(players && players.length) {
 				_this.context.player = players[0];
-				$.when(_this.getPlayerData(), _this.getItemData()).done(function() {
+				$.when(_this.getPlayerData(), _this.getPlayingItemData()).done(function() {
 					promise.resolve();
 				});
 			} else {
@@ -49,7 +49,7 @@ window.flingr.nowPlaying = (function(nowPlaying, $, _, undefined) {
 		});
 	};
 
-	nowPlaying.prototype.getItemData = function() {
+	nowPlaying.prototype.getPlayingItemData = function() {
 		var _this = this,
 			promise = $.Deferred();
 		_this.host.api.Player.GetItem.send({
@@ -90,11 +90,44 @@ window.flingr.nowPlaying = (function(nowPlaying, $, _, undefined) {
 	nowPlaying.prototype.update = function() {
 		var _this = this,
 			updateThenRender = function(changes) {
+				var promise = $.Deferred();
 				_.extend(_this.context, changes || {});
-				console.log('Updates started...');
-				return _this.getActivePlayer().always(function() {
-					console.log('Updates completed');
-					_this.render();
+				console.log('Now Playing Updating...');
+				_this.getActivePlayer().always(function() {
+					console.log('Now Playing updated', _this.context);
+					_this.render().pipe(promise).always(setupUiHandlers);
+				});
+				return promise.promise();
+			},
+			setupUiHandlers = function() {
+				var $elem = _this.$elem,
+					$btnPlayPause = $('#btnPlay, #btnPause', $elem),
+					$btnStop = $('#btnStop', $elem)
+					$seeker = $('#seeker', $elem),
+					api = _this.host.api.Player,
+					player = _this.context.player;
+
+				$btnPlayPause.one('click', function(event) {
+					api.PlayPause.send({playerid: player.playerid});
+					event.preventDefault();
+				});
+
+				$btnStop.one('click', function(event) {
+					api.Stop.send({playerid: player.playerid});
+					event.preventDefault();
+				});
+
+				$seeker.on('mousemove', function(evMove) {
+					console.log('Move', evMove);
+				}).on('mousedown', function(evDown) {
+					console.log('Down', evDown);
+
+					$seeker.one('mouseup', function(evUp) {
+						console.log('Up', evUp);
+						$seeker.off('mousemove');
+						evUp.preventDefault();
+					});
+					evDown.preventDefault();
 				});
 			};
 

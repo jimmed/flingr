@@ -3,10 +3,11 @@
 		<div class="container">
 			<a class="brand span1 center" id="state">
 				{@gt key=player.speed value=0}
-					<i class="icon-large icon-play"></i>
+					<i class="icon-large icon-play" id="btnPlay"></i>
 				{:else}
-					<i class="icon-large icon-pause"></i>
+					<i class="icon-large icon-pause" id="btnPause"></i>
 				{/gt}
+				<i class="icon-large icon-stop" id="btnStop"></i>
 			</a>
 
 			<div id="item" class="span3">
