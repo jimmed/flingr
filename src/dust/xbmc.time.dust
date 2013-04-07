@@ -1,0 +1,10 @@
+{?hours}
+	{hours}:
+	{@lt key=minutes value=10}0{/lt}
+{/hours}
+{?minutes}
+	{minutes}:
+	{@lt key=seconds value=10}0{/lt}
+{/minutes}
+{seconds}
+{^minutes}{^hours}s{/hours}{/minutes}

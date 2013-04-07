@@ -14,5 +14,6 @@
 				"src/js/flingr.appevents.js"
 			]
 		}
-	}
+	},
+	"permissions": ["storage"]
 }

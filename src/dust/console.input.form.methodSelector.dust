@@ -1,0 +1,34 @@
+<div class="control-group">
+	<label class="control-label" for="MethodGroup">Type</label>
+	<div class="controls">
+		<select id="MethodGroup" name="MethodGroup">
+			{@each input=api}
+				<option value="{key}"
+					{?MethodGroup}{@eq key=MethodGroup value=key} selected{/eq}{/MethodGroup}
+					>
+					{key}
+				</option>
+			{/each}
+		</select>	
+	</div>
+</div>
+<div class="control-group">
+	<label class="control-label" for="Method">Method</label>
+	<div class="controls">
+		<select id="Method" name="Method">
+			{@each input=selectedMethodGroup}
+				<option value="{key}"
+					{?Method}{@eq key=Method value=key} selected{/eq}{/Method}
+					>
+					{key}
+				</option>
+			{/each}
+		</select>
+	</div>
+</div>
+
+{?selectedMethod}
+	{>"dust.console.input.form.methodDetails":selectedMethod
+		name=Method
+	/}
+{/selectedMethod}

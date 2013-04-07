@@ -1,0 +1,3 @@
+<div id="remoteStuff">
+	<input type="text" id="virtualKeyboard" placeholder="Click here to send keystrokes" class="input-block-level" />
+</div>

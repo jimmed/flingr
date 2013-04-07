@@ -24,7 +24,7 @@ window.ws = (function(ws, _, undefined) {
 		socket.onerror = function(error) { trigger('error', error); };
 		socket.onopen = function() { trigger('open'); };
 		socket.onmessage = function(data) { trigger('data', data.data || data); };
-		socket.onclose = function() { trigger('close'); };
+		socket.onclose = function() { console.error('Socket closed'); trigger('close'); };
 
 		// Force events to fire
 		if(socket.readyState == 1) {
@@ -43,6 +43,9 @@ window.ws = (function(ws, _, undefined) {
 				return this;
 			},
 			close: function(callback) {
+				if(_.isFunction(callback)) {
+					this.on('close', callback);
+				}
 				socket.close();
 				return this;
 			},

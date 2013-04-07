@@ -14,9 +14,11 @@ window.xbmc = (function(xbmc, $, _, undefined) {
 	};
 
 	XBMC.prototype.disconnect = function() {
-		var promise = $.Deferred();
+		var _this = this,
+			promise = $.Deferred();
 		console.log('Disconnecting...');
-		this.jsonrpc.close(function() {
+		_this.jsonrpc.close(function() {
+			_this.trigger('JSONRPC.Disconnect');
 			promise.resolve();
 		});
 		return promise.promise();
@@ -42,7 +44,13 @@ window.xbmc = (function(xbmc, $, _, undefined) {
 		console.log('Waiting for API introspection...');
 
 		this.send('JSONRPC.Introspect').done(function(tree) {
-			var API = {};
+			var lookupRef = _.memoize(function(ref) {
+					console.log('Looking up', ref);
+					if(tree.types[ref]) {
+						return tree.types[ref];
+					}
+				}),API = {};
+
 			_.each(tree.methods, function(method, name) { 
 				var namePath = name.split(/\./g, 2),
 					sectionName = namePath[0],
@@ -50,6 +58,8 @@ window.xbmc = (function(xbmc, $, _, undefined) {
 					section = (API[sectionName] = API[sectionName] || {});
 
 				section[methodName] = method;
+
+				// Add send method
 				method.send = function(params, ttl) {
 					var promise = $.Deferred(),
 						errors = [];
@@ -70,7 +80,8 @@ window.xbmc = (function(xbmc, $, _, undefined) {
 							host.trigger('XBMC.Response', {method: name, result: result});
 							promise.resolve(result);
 						}).fail(function(error) {
-							console.warn('<<', error.data.method, error.data.stack);
+							if(error.data)
+							console.warn('<<', error.data.method, error.data.message, error.data.stack);
 							promise.reject(error);
 						});
 					} else {
@@ -79,6 +90,44 @@ window.xbmc = (function(xbmc, $, _, undefined) {
 					}
 					return promise.promise();
 				};
+
+				// Perform type introspection
+				if(method.params && tree.types) {
+					var resolveParameter = function(p) {
+							var ref = p['$ref'], 
+								newProps = {},
+								newAdditionalProps = {};
+							if(ref) {
+								//console.log('Forward referencing type', ref);
+								p.type = lookupRef(ref);
+								delete p['$ref'];
+							} else if(_.isArray(p.type)) {
+								p.type = _.map(p.type, resolveParameter);
+							} else if(p.type === 'array' && p.items) {
+								//console.log('Forwarding array of', p.items);
+								p.items.type = resolveParameter(p.items);
+							} else if(p.type === 'object') {
+								//console.log('Forwarding object of', p.properties);
+								if(p.properties) {
+									_.each(p.properties, function(value, key) {
+										var newProp = resolveParameter(value);
+										//console.log('Iterating object property', key, value);
+										newProps[key] = newProp;
+									});
+									//console.log('New properties', newProps);
+									p.properties = newProps;
+								} else {
+									//console.info('No properties on object', p);
+								}
+
+							} else {
+								//console.info('Ignoring absolute type', p.type);
+							}
+							return p;
+						};
+					method.resolvedParams = _.map(method.params, resolveParameter);
+					console.log('Resolved params of ', name, method.resolvedParams);
+				}
 			});
 			host.api = API;
 			host.introspection = tree;
@@ -135,7 +184,7 @@ window.xbmc = (function(xbmc, $, _, undefined) {
 		var promise = $.Deferred(),
 			host = new XBMC(hostOptions);
 
-		if(host && host.on) {
+		if(host && host.jsonrpc && host.jsonrpc.on) {
 			host.jsonrpc
 				.on('JSONRPC.Connected', function() {
 					console.log('CONNECTED!');
