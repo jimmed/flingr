@@ -37,12 +37,17 @@
 				$consoleBody = $('#ConsoleOutputBody', $consoleOutput),
 				$apiForm = $('form', $apiInput),
 				$settings = $('#SettingsForm', $page),
+				$remote = $('#remote', $page),
 				addConsoleRow = function(row) {
 					$('.empty-table-notice', $consoleBody).hide();
 					return render('console.output.row', row, $consoleBody, false).fail(function(error) {
 						console.error(error);
 					});
 				};
+
+			setupSettingsForm($settings);
+			console.log('Setting up remote', $remote);
+			setupRemote($remote, XBMC.api);
 
 			// Subscribe to events from our XBMC host
 			XBMC.on('XBMC.Event', function(params, event) {
@@ -62,9 +67,8 @@
 			});
 
 			// Add a listener for our API command form
-			var formParams = {}
-			setupApiForm($apiForm, XBMC.api).find('select:eq(0)').trigger('change');
-			setupSettingsForm($settings);
+			//setupApiForm($apiForm, XBMC.api).find('select:eq(0)').trigger('change');
+			
 		},
 		setupConnectionHandler = function($host, connect) {
 			var $hostname = $('#hostname', $host),
@@ -158,6 +162,9 @@
 			})
 			return $form;
 		},
+		setupRemote = function($elem, api) {
+			var remote = new flingr.remote($elem, api);
+		},
 		onConnect = function(XBMC, renderPage) {
 			var getSettings = flingr.settings.getAll();
 			console.log('Connection established');
@@ -168,10 +175,9 @@
 							api: host,
 							settings: settings
 						};
-					console.log('Context', context);
 					renderPage('browser', context).done(function($page) {
 						setupBrowserHandlers($page, host);
-						new flingr.nowPlaying(host, '#remote', render);
+						new flingr.nowPlaying(host, '#nowPlaying', render);
 					});
 				});
 			}).fail(function(error) {

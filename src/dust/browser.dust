@@ -3,11 +3,13 @@
 		<li><a href="#settings" data-toggle="tab"><i class="icon-cog"></i></a></li>
 		<li class="active"><a href="#console" data-toggle="tab">Console</a></li>
 		<li><a href="#api" data-toggle="tab">API Browser</a></li>
+		<li><a href="#remote" data-toggle="tab">Remote</a></li>
 	</ul>
 
 	<div class="tab-content">
 		<div class="tab-pane" id="settings">{>"dust.settings":settings /}</div>
 		<div class="tab-pane active" id="console">{>"dust.console":api /}</div>
 		<div class="tab-pane" id="api">{>"dust.api":api /}</div>
+		<div class="tab-pane" id="remote">{>"dust.remote" /}</div>
 	</div>
 </div>
