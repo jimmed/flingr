@@ -5,6 +5,28 @@
 window.flingr = window.flingr || {};
 window.flingr.nowPlaying = (function(nowPlaying, $, _, undefined) {
 
+	var secondsToTime = function(seconds) {
+		var hours = Math.floor(seconds / 3600),
+			minutes;
+
+		seconds -= hours * 3600;
+		minutes = Math.floor(seconds / 60);
+		seconds -= minutes * 60;
+		
+		return {
+			hours: hours,
+			minutes: minutes,
+			seconds: Math.floor(seconds),
+			milliseconds: (seconds - Math.floor(seconds)) * 1000
+		}
+	};
+
+	var timeToSeconds = function(time) {
+		return time.hours * 3600
+			 + time.minutes * 60
+			 + time.seconds;
+	};
+
 	nowPlaying = function(host, element, renderer) {
 		this.host = host;
 		this.context = {};
@@ -53,14 +75,8 @@ window.flingr.nowPlaying = (function(nowPlaying, $, _, undefined) {
 		}).done(function(data) {
 			_.extend(_this.context.player, data);
 			console.log(_this.context, data);
-			_this.context.player.totalSeconds = 
-				data.totaltime.hours * 3600 +
-				data.totaltime.minutes * 60 +
-				data.totaltime.seconds;
-			_this.context.player.seconds = 
-				data.time.hours * 3600 +
-				data.time.minutes * 60 +
-				data.time.seconds;
+			_this.context.player.totalSeconds = timeToSeconds(data.totaltime);
+			_this.context.player.seconds = timeToSeconds(data.time);
 			console.log(_this.context);
 		});
 	};
@@ -147,14 +163,6 @@ window.flingr.nowPlaying = (function(nowPlaying, $, _, undefined) {
 						step: 1,
 						value: player.seconds
 					}).on('slide', function(event) {
-						var seconds = event.value,
-							hours = Math.floor(seconds / 3600),
-							minutes;
-
-						seconds -= hours * 3600;
-						minutes = Math.floor(seconds / 60);
-						seconds -= minutes * 60;
-
 						api.Seek.send({
 							playerid: player.playerid,
 							value: (event.value / player.totalSeconds) * 100

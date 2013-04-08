@@ -1,3 +1,14 @@
-<div id="remoteStuff">
-	<input type="text" id="virtualKeyboard" placeholder="Click here to send keystrokes" class="input-block-level" />
-</div>
+<form class="form">
+	<div class="control-group">
+		<label class="control-label" for="virtualKeyboard">Virtual Keyboard</label>
+		<div class="controls">
+			<input type="text" id="virtualKeyboard" placeholder="Click here to send keystrokes" class="input-block-level" />
+		</div>
+	</div>
+	<div class="control-group">
+		<label class="control-label" for="openUrl">Open URL</label>
+		<div class="controls">
+			<input type="text" id="openUrl" placeholder="e.g. http://youtube.com/watch?v=xxxxxxxxxxx" class="input-block-level" />
+		</div>
+	</div>
+</form>

@@ -10,6 +10,7 @@ window.flingr.remote = (function(remote, $, _, undefined) {
 		this.api = api;
 		this.context = {};
 		this.$elem = $(element);
+		this.addons = new flingr.addons(api);
 		this.setup();
 	};
 
@@ -36,9 +37,19 @@ window.flingr.remote = (function(remote, $, _, undefined) {
 					_this.api.Input.SendText.send({
 						text: String.fromCharCode(key),
 						done: false
-					})
+					});
 				}
 				ev.preventDefault();
+			})
+			.on('keypress', '#openUrl', function(ev) {
+				var $el = $(this),
+					url = $el.val();
+				
+				if(ev.keyCode == 13) {
+					$el.val('');
+					_this.addons.openUrl(url);
+				}
+
 			});
 	};
 
