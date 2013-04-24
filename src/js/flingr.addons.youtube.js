@@ -4,8 +4,9 @@
  */
 
 (function(add, $, _, undefined) {
-	var pattern = /^https?:\/\/(?:www\.)?youtube.com\/watch\?(?=[^?]*v=(\w+))(?:[^\s?]+)?$/i,
+	var pattern = /^https?:\/\/(?:www\.)?youtube.com\/watch\?(?=[^?]*v=(\w+))(?:[^\s-_?]+)?$/i,
 		pluginUrlBase = 'plugin://plugin.video.youtube/?action=play_video&videoid=';
+		
 	add({
 		match: pattern,
 		open: function(url, api) {
