@@ -8,7 +8,7 @@ window.jsonrpc = (function(jsonrpc, ws, undefined) {
 	jsonrpc = function(host, port) {
 		var rpcversion = "2.0",
 			lastId = 0,
-			socket = ws(host, port),
+			socket = new flingr.websocket(host, port),
 			events = {},
 		    deserialize,
 		    serialize,
