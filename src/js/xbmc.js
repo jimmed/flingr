@@ -7,7 +7,7 @@ window.xbmc = (function(xbmc, $, _, undefined) {
 
 	var XBMC = function(options) {
 		_.extend(this, options);
-		this.jsonrpc = jsonrpc(this.host, this.port);
+		this.jsonrpc = new flingr.jsonrpc(this.host, this.port);
 		this.events = {};
 		this.subscribeEvents.call(this);
 		return this;
