@@ -8,6 +8,9 @@ window.flingr = (function(flingr, _, undefined) {
 	flingr.jsonrpc = function(host, port) {
 		this.rpcversion = "2.0";
 		this.lastId = 0;
+		this.activeRequests = 0;
+		this.maxConcurrentRequests = 1;
+		this.queue = [];
 		this.websocket = new flingr.websocket(host, port);
 		this.events = {};
 		this.eventListen();
@@ -109,25 +112,39 @@ window.flingr = (function(flingr, _, undefined) {
 	};
 
 	flingr.jsonrpc.prototype.send = function(data, successCallback, errorCallback, ttl) {
-		var request = this.serialize(data),
+		var _this = this,
+			request = this.serialize(data),
 			eventName = 'JSONRPC.Response' + request.id,
 			errorEventName = eventName + '.Error',
-			timeout;
+			timeout,
+			done,
+			processQueue = function() {
+				console.info('API:', _this.activeRequests, 'active requests,', _this.queue.length, 'queued requests');
+				if(_this.queue.length && _this.activeRequests < _this.maxConcurrentRequests) {
+					var request = _this.queue.pop();
+					_this.activeRequests++;
+					_this.websocket.send(request);
+				}
+			};
 
 		if(ttl) {
 			timeout = setTimeout(_.partial(errorCallback, 'Timeout exceeded.'), ttl * 1000);
 		}
 
-		this.on(eventName, function() {
+		done = function(callback) {
+			return function() {
 				if(timeout) clearTimeout(timeout);
-				successCallback.apply(this, arguments);
-			})
-			.on(errorEventName, function() {
-				if(timeout) clearTimeout(timeout);
-				errorCallback.apply(this, arguments);
-			});
+				_this.activeRequests--;
+				processQueue();
+				callback.apply(this, arguments);
+			}
+		};
 
-		this.websocket.send(request.payload);
+		this.on(eventName, done(successCallback))
+			.on(errorEventName, done(errorCallback));
+
+		this.queue.unshift(request.payload);
+		processQueue();
 
 		return this;
 	};
