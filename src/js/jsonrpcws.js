@@ -3,124 +3,140 @@
  * @author Jim O'Brien
  */
 
-window.jsonrpc = (function(jsonrpc, ws, undefined) {
+window.flingr = (function(flingr, _, undefined) {
 
-	jsonrpc = function(host, port) {
-		var rpcversion = "2.0",
-			lastId = 0,
-			socket = ws(host, port),
-			events = {},
-		    deserialize,
-		    serialize,
-		    trigger,
-		    listenForEvents;
+	flingr.jsonrpc = function(host, port) {
+		this.rpcversion = "2.0";
+		this.lastId = 0;
+		this.websocket = new flingr.websocket(host, port);
+		this.events = {};
+		this.eventListen();
+	};
 
-		trigger = function(event, data) {
-			if(_.isArray(events[event])) {
-				_.each(events[event], function(ev) {
-					ev(data, event);
-				});
-			}
-		};
+	flingr.jsonrpc.prototype.trigger = function(event, data) {
+		if(_.isArray(this.events[event])) {
+			_.each(this.events[event], function(ev) {
+				ev(data, event);
+			});
+		}
+		return this;
+	};
 
-		listenForEvents = _.once(function() {
-			socket.on('data', function(json) {
-				var data = deserialize(json),
-					eventName, errEventName;
+	flingr.jsonrpc.prototype.eventListen = _.once(function() {
+		var _this = this;
 
-				// Responses to our requests will have an 'id' and a 'result' or 'error'
+		_this.websocket
+			.on('data', function(json) {
+				var data = _this.deserialize(json),
+					eventName,
+					errorEventName;
+
 				if(data.id) {
-					eventName = 'JSONRPC.Response' + data.id, 
-					errEventName = eventName + '.Error';
+					eventName = 'JSONRPC.Response' + data.id;
+					errorEventName = eventName + '.Error';
 					if(data.result) {
-						trigger(eventName, data.result);
+						_this.trigger(eventName, data.result);
 					}
 					if(data.error) {
-						trigger(errEventName, data.error);
+						_this.trigger(errorEventName, data.error);
 					}
-					events = _.omit(events, [eventName, errEventName]);
+					_this.events = _.omit(_this.events, [eventName, errorEventName]);
+				} else if(data.method) {
+					_this.trigger(data.method, data.params || {});
+					_this.trigger('JSONRPC.Event', data);
+				} else {
+					console.info('Undecipherable data was returned from the socket', json, data);
+					_this.trigger('JSONRPC.Error', 'Invalid response from API');
 				}
-				// Event notifications have a 'method', and sometimes 'params'
-				else if(data.method) {
-					trigger(data.method, data.params || {});
-					trigger('JSONRPC.Event', data);
-				}
-				else {
-					console.info('Some kind of unknown data came back from the socket.', json, data);
-				}
+			})
+			.on('open', function() {
+				_this.trigger('JSONRPC.Connected');
+			})
+			.on('close', function() {
+				_this.trigger('JSONRPC.Disconnect', arguments);
+			})
+			.on('error', function(error) {
+				_this.trigger('JSONRPC.SocketError', error);
 			});
-			socket.on('open', function() { trigger('JSONRPC.Connected') });
-			socket.on('close', function() { console.log('Socket closed.', arguments); trigger('JSONRPC.Disconnect', arguments) });
-			socket.on('error', function(error) { console.log('Socket error.', error); trigger('JSONRPC.SocketError', error) });
-		});
-		listenForEvents();
 
-		serialize = function(data) {
-			var thisId = ++lastId,
-				payload = _.extend({
-					"jsonrpc": rpcversion,
-					"id": thisId
-				}, data);
-			return {
-				id: thisId,
-				payload: JSON.stringify(payload)
-			};
-		};
+		return this;
+	});
 
-		deserialize = function(json) {
-			var data;
-			try {
-				data = JSON.parse(json);
-			} catch(e) {
-				throw new Exception("Response could not be parsed as JSON", json, e);
-			}
-			if(!data || !data.jsonrpc) {
-				throw new Exception("Response does not appear to be valid JSONRPC", data.jsonrpc);
-			}
-			if(data.jsonrpc !== '2.0') {
-				throw new Exception("Response is not JSONRPC v2.0", data.jsonrpc);
-			}
-			if(data.result === undefined && data.method === undefined && data.error === undefined) {
-				throw new Exception("JSONRPC response has no result, method or error", data);
-			}
-			return _.omit(data, 'jsonrpc');
-		};
+	flingr.jsonrpc.prototype.serialize = function(data) {
+		var thisId = ++this.lastId,
+			payload = _.extend({
+				jsonrpc: this.rpcversion,
+				id: thisId
+			}, data);
 
 		return {
-			on: function(event, callback) {
-				if(!_.isArray(events[event])) {
-					events[event] = [callback];
-				} else {
-					events[event].push(callback);
-				}
-				return this;
-			},
-			send: function(data, successCallback, errorCallback, ttl) {
-				var request = serialize(data),
-					eventName = 'JSONRPC.Response' + request.id, 
-					errEventName = eventName + '.Error',
-					timeout;
-				
-				if(ttl) {
-					timeout = setTimeout(_.partial(errorCallback, 'Timeout exceeded.'), ttl * 1000);
-				}
-				this.on(eventName, function() {
-					if(timeout) clearTimeout(timeout);
-					successCallback.apply(this, arguments);
-				});
-				this.on(errEventName, function() {
-					if(timeout) clearTimeout(timeout);
-					errorCallback.apply(this, arguments);
-				});
-				socket.send(request.payload);
-				return this;
-			},
-			close: function(callback) {
-				socket.on('close', callback).close();
-				return this;
-			}
-		};
+			id: thisId,
+			payload: JSON.stringify(payload)
+		}
 	};
-	return jsonrpc;
 
-}).call(this, window.jsonrpc || {}, window.ws);
+	flingr.jsonrpc.prototype.deserialize = function(json) {
+		var data;
+		
+		try {
+			data = JSON.parse(json);
+		} catch(e) {
+			throw new Exception('Response could not be parsed as JSON', json, e);
+		}
+
+		if(!data || !data.jsonrpc) {
+			throw new Exception('Response does not appear to be valid JSONRPC', data);
+		}
+
+		if(data.jsonrpc !== '2.0') {
+			throw new Exception('Resposne is not JSONRPC v2.0', data);
+		}
+
+		if(data.result === undefined && data.method === undefined && data.error === undefined) {
+			throw new Exception('JSONRPC response has no result, method or error', data);
+		}
+
+		return _.omit(data, 'jsonrpc');
+	};
+
+	flingr.jsonrpc.prototype.on = function(event, callback) {
+		if(!_.isArray(this.events[event])) {
+			this.events[event] = [callback];
+		} else {
+			this.events[event].push(callback);
+		}
+		return this;
+	};
+
+	flingr.jsonrpc.prototype.send = function(data, successCallback, errorCallback, ttl) {
+		var request = this.serialize(data),
+			eventName = 'JSONRPC.Response' + request.id,
+			errorEventName = eventName + '.Error',
+			timeout;
+
+		if(ttl) {
+			timeout = setTimeout(_.partial(errorCallback, 'Timeout exceeded.'), ttl * 1000);
+		}
+
+		this.on(eventName, function() {
+				if(timeout) clearTimeout(timeout);
+				successCallback.apply(this, arguments);
+			})
+			.on(errorEventName, function() {
+				if(timeout) clearTimeout(timeout);
+				errorCallback.apply(this, arguments);
+			});
+
+		this.websocket.send(request.payload);
+
+		return this;
+	};
+
+	flingr.jsonrpc.prototype.close = function(callback) {
+		this.websocket.on('close', callback).close();
+		return this;
+	};
+
+	return flingr;
+
+}).call(this, window.flingr || {}, _);
