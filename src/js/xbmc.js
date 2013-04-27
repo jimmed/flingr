@@ -3,9 +3,9 @@
  * @author Jim O'Brien
  */
 
-window.xbmc = (function(xbmc, $, _, undefined) {
+window.flingr = (function(flingr, $, _, undefined) {
 
-	var XBMC = function(options) {
+	flingr.xbmc = function(options) {
 		_.extend(this, options);
 		this.jsonrpc = new flingr.jsonrpc(this.host, this.port);
 		this.events = {};
@@ -13,7 +13,7 @@ window.xbmc = (function(xbmc, $, _, undefined) {
 		return this;
 	};
 
-	XBMC.prototype.disconnect = function() {
+	flingr.xbmc.prototype.disconnect = function() {
 		var _this = this,
 			promise = $.Deferred();
 		console.log('Disconnecting...');
@@ -25,7 +25,7 @@ window.xbmc = (function(xbmc, $, _, undefined) {
 	};
 
 	/* Wraps a jQuery.Deferred promise around JSONRPC send */
-	XBMC.prototype.send = function(method, params) {
+	flingr.xbmc.prototype.send = function(method, params) {
 		var promise = $.Deferred();
 		this.jsonrpc.send({
 			method: method,
@@ -38,7 +38,7 @@ window.xbmc = (function(xbmc, $, _, undefined) {
 		return promise.promise();
 	};
 
-	XBMC.prototype.introspect = _.once(function() {
+	flingr.xbmc.prototype.introspect = _.once(function() {
 		var host = this,
 			promise = $.Deferred();
 		console.log('Waiting for API introspection...');
@@ -138,7 +138,7 @@ window.xbmc = (function(xbmc, $, _, undefined) {
 		return promise.promise();
 	});
 
-	XBMC.prototype.subscribeEvents = function(events) {
+	flingr.xbmc.prototype.subscribeEvents = function(events) {
 		var _this = this;
 		this.jsonrpc.on('JSONRPC.Event', function(data) {
 			_this.trigger(data.method, data.params || {});
@@ -146,7 +146,7 @@ window.xbmc = (function(xbmc, $, _, undefined) {
 		});
 	};
 
-	XBMC.prototype.trigger = function(event, params) {
+	flingr.xbmc.prototype.trigger = function(event, params) {
 		if(_.isArray(this.events[event])) {
 			_.each(this.events[event], function(ev) {
 				ev(params, event);
@@ -155,7 +155,7 @@ window.xbmc = (function(xbmc, $, _, undefined) {
 		return this;
 	};
 
-	XBMC.prototype.on = function(event, callback) {
+	flingr.xbmc.prototype.on = function(event, callback) {
 		if(_.isFunction(callback)) {
 			if(_.isArray(this.events[event])) {
 				this.events[event].push(callback);
@@ -166,7 +166,7 @@ window.xbmc = (function(xbmc, $, _, undefined) {
 		return this;
 	};
 
-	XBMC.prototype.off = function(event, callback) {
+	flingr.xbmc.prototype.off = function(event, callback) {
 		if(event) {
 			if(_.isFunction(callback)) {
 				this.events[event] = _.reject(this.events[event], function(maybe) {
@@ -180,9 +180,9 @@ window.xbmc = (function(xbmc, $, _, undefined) {
 		return this;
 	};
 
-	xbmc.createHost = function(hostOptions) {
+	flingr.xbmc.prototype.init = function() {
 		var promise = $.Deferred(),
-			host = new XBMC(hostOptions);
+			host = this;
 
 		if(host && host.jsonrpc && host.jsonrpc.on) {
 			host.jsonrpc
@@ -213,6 +213,6 @@ window.xbmc = (function(xbmc, $, _, undefined) {
 	 * Utility wrappers for XBMC API
 	 */
 
-	return xbmc;
+	return flingr;
 
-}).call(this, window.xbmc || {}, jQuery, _);
+}).call(this, window.flingr || {}, jQuery, _);

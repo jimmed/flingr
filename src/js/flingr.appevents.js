@@ -6,10 +6,11 @@
 (function(app, _, undefined) {
 
 	var connectHost = function(host, port) {
-		return xbmc.createHost({
+		var xbmc = new flingr.xbmc({
 			host: host || 'localhost',
 			port: port || 9090
 		});
+		return xbmc.init();
 	};
 
 	app.runtime.onLaunched.addListener(function(launchData) {
