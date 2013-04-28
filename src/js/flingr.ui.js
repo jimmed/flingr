@@ -3,201 +3,219 @@
  * @author Jim O'Brien
  */
 
-(function(window, $, undefined) {
+window.flingr = (function(flingr, $, undefined) {
+	
+	flingr.ui = function() {};
 
-	var render = function(template, context, target, targetReplace) {
-			var promise = $.Deferred();
-			dust.render('dust.' + template, context || {}, function(err, output) {
-				if(err) {
-					promise.reject(err.message);
-				} else {
-					if(target) {
-						$(target)[targetReplace ? 'html' : 'append'](output);
-					}
-					promise.resolve(output);
+	flingr.ui.prototype.render = function(template, context, target, targetReplace) {
+		var promise = $.Deferred();
+		dust.render('dust.' + template, context || {}, function(err, output) {
+			if(err) {
+				promise.reject(err.message);
+			} else {
+				if(target) {
+					$(target)[targetReplace ? 'html' : 'append'](output);
 				}
-			})
-			return promise.promise();
-		},
-		renderPage = function(pageName, context) {
-			var $page = $('[data-content]'),
-				promise = $.Deferred();
-			if($page.length) {
-				render(pageName, context, $page, true).fail(function(error) {
-					promise.reject(error);
-				}).done(function() {
-					promise.resolve($page);
-				});
+				promise.resolve(output);
 			}
-			return promise.promise();
-		},
-		setupBrowserHandlers = function($page, XBMC) {
-			var $apiInput = $('#ConsoleInput', $page),
-				$consoleOutput = $('#ConsoleOutput', $page),
-				$consoleBody = $('#ConsoleOutputBody', $consoleOutput),
-				$apiForm = $('form', $apiInput),
-				$settings = $('#SettingsForm', $page),
-				$remote = $('#remote', $page),
-				addConsoleRow = function(row) {
-					$('.empty-table-notice', $consoleBody).hide();
-					return render('console.output.row', row, $consoleBody, false).fail(function(error) {
-						console.error(error);
-					});
-				};
+		})
+		return promise.promise();
+	};
 
-			setupSettingsForm($settings);
-			console.log('Setting up remote', $remote);
-			setupRemote($remote, XBMC.api);
-
-			// Subscribe to events from our XBMC host
-			XBMC.on('XBMC.Event', function(params, event) {
-				if(params.method && params.params) {
-					addConsoleRow({action: 'notification', method: params.method, data: params.params.data})
-				}
+	flingr.ui.prototype.renderPage = function(pageName, context) {
+		var $page = $('[data-content]'),
+			promise = $.Deferred();
+		if($page.length) {
+			this.render(pageName, context, $page, true).fail(function(error) {
+				promise.reject(error);
+			}).done(function() {
+				promise.resolve($page);
 			});
-			XBMC.on('XBMC.Request', function(params, event) {
-				if(params.method && params.params) {
-					addConsoleRow({action: 'request', method: params.method, data: params.params})
-				}
-			});
-			XBMC.on('XBMC.Response', function(params, event) {
-				if(params.method && params.result !== undefined) {
-					addConsoleRow({action: 'response', method: params.method, data: params.result})
-				}
-			});
+		}
+		return promise.promise();
+	};
 
-			// Add a listener for our API command form
-			//setupApiForm($apiForm, XBMC.api).find('select:eq(0)').trigger('change');
-			
-		},
-		setupConnectionHandler = function($host, connect) {
-			var $hostname = $('#hostname', $host),
-				$port = $('#port', $host);
-
-			$host.one('submit', function(ev) {
-				var hostname = $hostname.val() || $hostname.prop('placeholder'),
-					port = $port.val() || $port.prop('placeholder');
-
-				$hostname.val(hostname);
-				$port.val(port);
-				connect(hostname, port);
-				ev.preventDefault();
-				return false;
-			});
-
-			return $host;
-		},
-		setupApiForm = function($form, api, inputData, noRedraw) {
-			var $ms = $('#MethodSelector', $form),
-				$params = $('#Parameters', $form),
-				defaults = {},
-				data;
-
-			// Extract defaults from the API
-			$.each(api, function(method){
-				defaults['Method'] = method;
-				$.each(api[method], function(methodGroup) {
-					defaults['MethodGroup'] = methodGroup;
-				})
-				return false;
-			});
-
-			// Overwrite defaults with input data
-			data = $.extend({}, defaults, inputData);
-			
-			// Update the method selector
-			$ms.on('change', 'select', function(event) {
-				var context = {api:api},
-					$fields = $('select', $ms),
-					paramContext;
-
-				$fields.each(function() {
-					data[$(this).prop('id')] = $(this).val();
+	flingr.ui.prototype.setupBrowserHandlers = function($page, XBMC) {
+		var _this = this,
+			$apiInput = $('#ConsoleInput', $page),
+			$consoleOutput = $('#ConsoleOutput', $page),
+			$consoleBody = $('#ConsoleOutputBody', $consoleOutput),
+			$apiForm = $('form', $apiInput),
+			$settings = $('#SettingsForm', $page),
+			$remote = $('#remote', $page),
+			addConsoleRow = function(row) {
+				$('.empty-table-notice', $consoleBody).hide();
+				return _this.render('console.output.row', row, $consoleBody, false).fail(function(error) {
+					console.error(error);
 				});
-				$.extend(context, data);
-				if(context.MethodGroup) {
-					context.selectedMethodGroup = api[context.MethodGroup];
-					if(context.Method) {
-						context.selectedMethod = context.selectedMethodGroup[context.Method];
-					}
-				}
+			};
 
-				render('console.input.form.methodSelector', context, $ms, true).done(function() {
-					setupApiForm($form, api, data, true);
-				});
-				if(context.selectedMethod) {
-					paramContext = {params: context.selectedMethod};
-					render('console.input.form.parameters', paramContext, $params, true);
-				}
-				if(event) event.preventDefault();
-			});
+		_this.setupSettingsForm($settings);
+		console.log('Setting up remote', $remote);
+		_this.setupRemote($remote, XBMC.api);
 
-			$form.on('submit', function(event) {
-				event.preventDefault();
-				console.log(data);
-				return false;
-			});
-			return $form;
-		},
-		setupSettingsForm = function($form) {
-			console.log('Setting up', $form);
-			$form.on('change', 'input, select', function(event) {
-				var $field = $(this),
-					key = $field.prop('id'),
-					value = $field.val(),
-					updates = {};
+		// Subscribe to events from our XBMC host
+		XBMC.on('XBMC.Event', function(params, event) {
+			if(params.method && params.params) {
+				addConsoleRow({action: 'notification', method: params.method, data: params.params.data})
+			}
+		});
+		XBMC.on('XBMC.Request', function(params, event) {
+			if(params.method && params.params) {
+				addConsoleRow({action: 'request', method: params.method, data: params.params})
+			}
+		});
+		XBMC.on('XBMC.Response', function(params, event) {
+			if(params.method && params.result !== undefined) {
+				addConsoleRow({action: 'response', method: params.method, data: params.result})
+			}
+		});
 
-				if($field.prop('type') == 'checkbox') {
-					value = value === 'on';
-				}
+		// Add a listener for our API command form
+		//setupApiForm($apiForm, XBMC.api).find('select:eq(0)').trigger('change');
+		
+	};
 
-				updates[key] = value;
-				flingr.settings.set(updates).done(function() {
-					flingr.settings.getAll().done(function(values) {
-						render('settings', values, '#settings', true).done(function() {
-							setupSettingsForm($form);
-						});
-					});
-				});
+	flingr.ui.prototype.setupConnectionHandler = function($host, connect) {
+		var _this = this,
+			$hostname = $('#hostname', $host),
+			$port = $('#port', $host);
+
+		$host.one('submit', function(ev) {
+			var hostname = $hostname.val() || $hostname.prop('placeholder'),
+				port = $port.val() || $port.prop('placeholder');
+
+			$hostname.val(hostname);
+			$port.val(port);
+			connect(hostname, port);
+			ev.preventDefault();
+			return false;
+		});
+
+		return $host;
+	};
+
+	flingr.ui.prototype.setupApiForm = function($form, api, inputData, noRedraw) {
+		var _this = this,
+			$ms = $('#MethodSelector', $form),
+			$params = $('#Parameters', $form),
+			defaults = {},
+			data;
+
+		// Extract defaults from the API
+		$.each(api, function(method){
+			defaults['Method'] = method;
+			$.each(api[method], function(methodGroup) {
+				defaults['MethodGroup'] = methodGroup;
 			})
-			return $form;
-		},
-		setupRemote = function($elem, api) {
-			var remote = new flingr.remote($elem, api);
-		},
-		onConnect = function(XBMC, renderPage) {
-			var getSettings = flingr.settings.getAll();
-			console.log('Connection established');
-			window.flingr.activeHost = XBMC;
-			XBMC.introspect().done(function(host) {
-				getSettings.done(function(settings) {
-					var context = {
-							api: host,
-							settings: settings
-						};
-					renderPage('browser', context).done(function($page) {
-						setupBrowserHandlers($page, host);
-						new flingr.nowPlaying(host, '#nowPlaying', render);
+			return false;
+		});
+
+		// Overwrite defaults with input data
+		data = $.extend({}, defaults, inputData);
+		
+		// Update the method selector
+		$ms.on('change', 'select', function(event) {
+			var context = {api:api},
+				$fields = $('select', $ms),
+				paramContext;
+
+			$fields.each(function() {
+				data[$(this).prop('id')] = $(this).val();
+			});
+			$.extend(context, data);
+			if(context.MethodGroup) {
+				context.selectedMethodGroup = api[context.MethodGroup];
+				if(context.Method) {
+					context.selectedMethod = context.selectedMethodGroup[context.Method];
+				}
+			}
+
+			_this.render('console.input.form.methodSelector', context, $ms, true).done(function() {
+				_this.setupApiForm($form, api, data, true);
+			});
+			if(context.selectedMethod) {
+				paramContext = {params: context.selectedMethod};
+				_this.render('console.input.form.parameters', paramContext, $params, true);
+			}
+			if(event) event.preventDefault();
+		});
+
+		$form.on('submit', function(event) {
+			event.preventDefault();
+			console.log(data);
+			return false;
+		});
+		return $form;
+	};
+
+	flingr.ui.prototype.setupSettingsForm = function($form) {
+		var _this = this;
+		console.log('Setting up', $form);
+		$form.on('change', 'input, select', function(event) {
+			var $field = $(this),
+				key = $field.prop('id'),
+				value = $field.val(),
+				updates = {};
+
+			if($field.prop('type') == 'checkbox') {
+				value = value === 'on';
+			}
+
+			updates[key] = value;
+			flingr.settings.set(updates).done(function() {
+				flingr.settings.getAll().done(function(values) {
+					_this.render('settings', values, '#settings', true).done(function() {
+						_this.setupSettingsForm($form);
 					});
 				});
-			}).fail(function(error) {
-				console.error('Error introspecting', error);
-			})
-		},
-		onDisconnect = function(error) {
-			render('home', {error: error}, '[data-content]', true);
-		};
+			});
+		})
+		return $form;
+	};
 
-	$(function() {
-		var $hostForm = $('#hostForm'),
+	flingr.ui.prototype.setupRemote = function($elem, api) {
+		var remote = new flingr.remote($elem, api);
+	};
+	
+	flingr.ui.prototype.onConnect = function(XBMC, renderPage) {
+		var getSettings = flingr.settings.getAll(),
+			_this = this;
+		console.log('Connection established');
+		window.flingr.activeHost = XBMC;
+		XBMC.introspect().done(function(host) {
+			getSettings.done(function(settings) {
+				var context = {
+						api: host,
+						settings: settings
+					};
+				_this.renderPage('browser', context).done(function($page) {
+					_this.setupBrowserHandlers($page, host);
+					new flingr.nowPlaying(host, '#nowPlaying', function() {
+						return _this.render.apply(_this, arguments);
+					});
+				});
+			});
+		}).fail(function(error) {
+			console.error('Error introspecting', error);
+		})
+	};
+
+	flingr.ui.prototype.onDisconnect = function(error) {
+		this.render('home', {error: error}, '[data-content]', true);
+	};
+
+	flingr.ui.prototype.init = function() {
+		var _this = this,
+			$hostForm = $('#hostForm'),
 			$controls = $('input, button', $hostForm),
 			$button = $('button', $hostForm),
 			disconnect = function(error) {
 				console.log('Disconnect');
 				$button.removeClass('btn-success').addClass('btn-info').text('Connect').prop('disabled', false);
 				$controls[0].focus();
-				onDisconnect(error);
-				setupConnectionHandler($hostForm, connect);
+				_this.onDisconnect(error);
+				_this.setupConnectionHandler($hostForm, connect);
 			},
 			connect = function(host, port) {
 				$controls.prop('disabled', true);
@@ -213,7 +231,7 @@
 					
 					console.log('XBMC Connected', XBMC);
 					
-					onConnect(XBMC, renderPage);
+					_this.onConnect(XBMC, function() { _this.renderPage.apply(_this, arguments) });
 					
 					XBMC.on('XBMC.Event', function() {
 						console.log('XBMC Event', arguments);
@@ -229,15 +247,20 @@
 		if(!flingr && !flingr.connect) {
 			console.warn('Background window hasn\'t provided connection function.');
 		} else {
-			setupConnectionHandler($hostForm, connect);
+			_this.setupConnectionHandler($hostForm, connect);
 			flingr.settings.get(['AutoConnectHost','AutoConnectPort']).done(function(settings) {
 				if(settings.AutoConnectHost && settings.AutoConnectPort) {
 					connect(settings.AutoConnectHost, settings.AutoConnectPort);
 				}
 			});
-			renderPage('home');
+			_this.renderPage('home');
 		}
-	});
+	};
 
+	return flingr;
+})(window.flingr || {}, jQuery);
 
-}).call(this, window, jQuery);
+$(function() {
+	var UI = new flingr.ui;
+	UI.init();
+})
