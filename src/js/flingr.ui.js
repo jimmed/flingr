@@ -9,6 +9,7 @@ window.flingr = (function(flingr, $, undefined) {
 
 	flingr.ui.prototype.renderTemplate = function(template, context, target, targetReplace) {
 		var promise = $.Deferred();
+		
 		dust.render('dust.' + template, context || {}, function(err, output) {
 			if(err) {
 				promise.reject(err.message);
@@ -18,24 +19,29 @@ window.flingr = (function(flingr, $, undefined) {
 				}
 				promise.resolve(output);
 			}
-		})
+		});
+
 		return promise.promise();
 	};
 
 	flingr.ui.prototype.render = function(pageName, context) {
 		var $page = $('[data-content]'),
 			promise = $.Deferred();
+
 		if($page.length) {
-			this.renderTemplate(pageName, context, $page, true).fail(function(error) {
-				promise.reject(error);
-			}).done(function() {
-				promise.resolve($page);
-			});
+			this.renderTemplate(pageName, context, $page, true)
+				.done(function() {
+					promise.resolve($page);
+				})
+				.fail(function(error) {
+					promise.reject(error);
+				});
 		}
+
 		return promise.promise();
 	};
 
-	flingr.ui.prototype.setupUi = function($page, XBMC) {
+	flingr.ui.prototype.setupUi = function($page, host) {
 		var _this = this,
 			$apiInput = $('#ConsoleInput', $page),
 			$consoleOutput = $('#ConsoleOutput', $page),
@@ -43,39 +49,36 @@ window.flingr = (function(flingr, $, undefined) {
 			$apiForm = $('form', $apiInput),
 			$settings = $('#SettingsForm', $page),
 			$remote = $('#remote', $page),
+
+			// TODO: Separate console out into separate file
 			addConsoleRow = function(row) {
 				$('.empty-table-notice', $consoleBody).hide();
-				return _this.renderTemplate('console.output.row', row, $consoleBody, false).fail(function(error) {
-					console.error(error);
-				});
+				return _this.renderTemplate('console.output.row', row, $consoleBody, false);
 			};
 
 		_this.setupSettingsForm($settings);
-		console.log('Setting up remote', $remote);
 		_this.setupRemote($remote, XBMC.api);
 
 		// Subscribe to events from our XBMC host
-		XBMC.on('XBMC.Event', function(params, event) {
-			if(params.method && params.params) {
-				addConsoleRow({action: 'notification', method: params.method, data: params.params.data})
-			}
-		});
-		XBMC.on('XBMC.Request', function(params, event) {
-			if(params.method && params.params) {
-				addConsoleRow({action: 'request', method: params.method, data: params.params})
-			}
-		});
-		XBMC.on('XBMC.Response', function(params, event) {
-			if(params.method && params.result !== undefined) {
-				addConsoleRow({action: 'response', method: params.method, data: params.result})
-			}
-		});
-
-		// Add a listener for our API command form
-		//setupApiForm($apiForm, XBMC.api).find('select:eq(0)').trigger('change');
-		
+		host
+			.on('XBMC.Event', function(params, event) {
+				if(params.method && params.params) {
+					addConsoleRow({action: 'notification', method: params.method, data: params.params.data})
+				}
+			})
+			.on('XBMC.Request', function(params, event) {
+				if(params.method && params.params) {
+					addConsoleRow({action: 'request', method: params.method, data: params.params})
+				}
+			})
+			.on('XBMC.Response', function(params, event) {
+				if(params.method && params.result !== undefined) {
+					addConsoleRow({action: 'response', method: params.method, data: params.result})
+				}
+			});
 	};
 
+	// TODO: Separate connection form into separate file
 	flingr.ui.prototype.setupConnectionHandler = function($host, connect) {
 		var _this = this,
 			$hostname = $('#hostname', $host),
@@ -95,63 +98,10 @@ window.flingr = (function(flingr, $, undefined) {
 		return $host;
 	};
 
-	flingr.ui.prototype.setupApiForm = function($form, api, inputData, noRedraw) {
-		var _this = this,
-			$ms = $('#MethodSelector', $form),
-			$params = $('#Parameters', $form),
-			defaults = {},
-			data;
-
-		// Extract defaults from the API
-		$.each(api, function(method){
-			defaults['Method'] = method;
-			$.each(api[method], function(methodGroup) {
-				defaults['MethodGroup'] = methodGroup;
-			})
-			return false;
-		});
-
-		// Overwrite defaults with input data
-		data = $.extend({}, defaults, inputData);
-		
-		// Update the method selector
-		$ms.on('change', 'select', function(event) {
-			var context = {api:api},
-				$fields = $('select', $ms),
-				paramContext;
-
-			$fields.each(function() {
-				data[$(this).prop('id')] = $(this).val();
-			});
-			$.extend(context, data);
-			if(context.MethodGroup) {
-				context.selectedMethodGroup = api[context.MethodGroup];
-				if(context.Method) {
-					context.selectedMethod = context.selectedMethodGroup[context.Method];
-				}
-			}
-
-			_this.renderTemplate('console.input.form.methodSelector', context, $ms, true).done(function() {
-				_this.setupApiForm($form, api, data, true);
-			});
-			if(context.selectedMethod) {
-				paramContext = {params: context.selectedMethod};
-				_this.renderTemplate('console.input.form.parameters', paramContext, $params, true);
-			}
-			if(event) event.preventDefault();
-		});
-
-		$form.on('submit', function(event) {
-			event.preventDefault();
-			console.log(data);
-			return false;
-		});
-		return $form;
-	};
-
+	// TODO: Move settings tab into separate file
 	flingr.ui.prototype.setupSettingsForm = function($form) {
 		var _this = this;
-		console.log('Setting up', $form);
+
 		$form.on('change', 'input, select', function(event) {
 			var $field = $(this),
 				key = $field.prop('id'),
@@ -170,7 +120,8 @@ window.flingr = (function(flingr, $, undefined) {
 					});
 				});
 			});
-		})
+		});
+
 		return $form;
 	};
 
@@ -181,8 +132,11 @@ window.flingr = (function(flingr, $, undefined) {
 	flingr.ui.prototype.onConnect = function(XBMC, renderPage) {
 		var getSettings = flingr.settings.getAll(),
 			_this = this;
-		console.log('Connection established');
-		window.flingr.activeHost = XBMC;
+
+		// TODO: Remove this
+		flingr.activeHost = XBMC;
+
+		// TODO: Render first, introspect later
 		XBMC.introspect().done(function(host) {
 			getSettings.done(function(settings) {
 				var context = {
@@ -201,6 +155,7 @@ window.flingr = (function(flingr, $, undefined) {
 		})
 	};
 
+	// TODO: Fix connection error handling
 	flingr.ui.prototype.onDisconnect = function(error) {
 		this.renderTemplate('home', {error: error}, '[data-content]', true);
 	};
@@ -223,20 +178,18 @@ window.flingr = (function(flingr, $, undefined) {
 
 				flingr.connect(host, port).done(function(XBMC){
 					$button.text('Connected').removeClass('btn-info').addClass('btn-success');
+					
 					$hostForm.off('submit').on('submit', function(ev) {
 						ev.preventDefault();
 						disconnect();
 					});
+
 					$controls.prop('disabled', false);
 					
 					console.log('XBMC Connected', XBMC);
 					
 					_this.onConnect(XBMC, function() { _this.render.apply(_this, arguments) });
 					
-					XBMC.on('XBMC.Event', function() {
-						console.log('XBMC Event', arguments);
-					});
-
 					XBMC.on('JSONRPC.Disconnect', disconnect)
 
 					// TODO: Handle disconnection
@@ -260,6 +213,7 @@ window.flingr = (function(flingr, $, undefined) {
 	return flingr;
 })(window.flingr || {}, jQuery);
 
+// TODO: Move this to separate 'init' file -> better potential for writing tests
 $(function() {
 	var UI = new flingr.ui;
 	UI.init();
