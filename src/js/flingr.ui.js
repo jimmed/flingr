@@ -7,7 +7,7 @@ window.flingr = (function(flingr, $, undefined) {
 	
 	flingr.ui = function() {};
 
-	flingr.ui.prototype.render = function(template, context, target, targetReplace) {
+	flingr.ui.prototype.renderTemplate = function(template, context, target, targetReplace) {
 		var promise = $.Deferred();
 		dust.render('dust.' + template, context || {}, function(err, output) {
 			if(err) {
@@ -22,11 +22,11 @@ window.flingr = (function(flingr, $, undefined) {
 		return promise.promise();
 	};
 
-	flingr.ui.prototype.renderPage = function(pageName, context) {
+	flingr.ui.prototype.render = function(pageName, context) {
 		var $page = $('[data-content]'),
 			promise = $.Deferred();
 		if($page.length) {
-			this.render(pageName, context, $page, true).fail(function(error) {
+			this.renderTemplate(pageName, context, $page, true).fail(function(error) {
 				promise.reject(error);
 			}).done(function() {
 				promise.resolve($page);
@@ -35,7 +35,7 @@ window.flingr = (function(flingr, $, undefined) {
 		return promise.promise();
 	};
 
-	flingr.ui.prototype.setupBrowserHandlers = function($page, XBMC) {
+	flingr.ui.prototype.setupUi = function($page, XBMC) {
 		var _this = this,
 			$apiInput = $('#ConsoleInput', $page),
 			$consoleOutput = $('#ConsoleOutput', $page),
@@ -45,7 +45,7 @@ window.flingr = (function(flingr, $, undefined) {
 			$remote = $('#remote', $page),
 			addConsoleRow = function(row) {
 				$('.empty-table-notice', $consoleBody).hide();
-				return _this.render('console.output.row', row, $consoleBody, false).fail(function(error) {
+				return _this.renderTemplate('console.output.row', row, $consoleBody, false).fail(function(error) {
 					console.error(error);
 				});
 			};
@@ -131,12 +131,12 @@ window.flingr = (function(flingr, $, undefined) {
 				}
 			}
 
-			_this.render('console.input.form.methodSelector', context, $ms, true).done(function() {
+			_this.renderTemplate('console.input.form.methodSelector', context, $ms, true).done(function() {
 				_this.setupApiForm($form, api, data, true);
 			});
 			if(context.selectedMethod) {
 				paramContext = {params: context.selectedMethod};
-				_this.render('console.input.form.parameters', paramContext, $params, true);
+				_this.renderTemplate('console.input.form.parameters', paramContext, $params, true);
 			}
 			if(event) event.preventDefault();
 		});
@@ -165,7 +165,7 @@ window.flingr = (function(flingr, $, undefined) {
 			updates[key] = value;
 			flingr.settings.set(updates).done(function() {
 				flingr.settings.getAll().done(function(values) {
-					_this.render('settings', values, '#settings', true).done(function() {
+					_this.renderTemplate('settings', values, '#settings', true).done(function() {
 						_this.setupSettingsForm($form);
 					});
 				});
@@ -189,10 +189,10 @@ window.flingr = (function(flingr, $, undefined) {
 						api: host,
 						settings: settings
 					};
-				_this.renderPage('browser', context).done(function($page) {
-					_this.setupBrowserHandlers($page, host);
+				_this.render('browser', context).done(function($page) {
+					_this.setupUi($page, host);
 					new flingr.nowPlaying(host, '#nowPlaying', function() {
-						return _this.render.apply(_this, arguments);
+						return _this.renderTemplate.apply(_this, arguments);
 					});
 				});
 			});
@@ -202,7 +202,7 @@ window.flingr = (function(flingr, $, undefined) {
 	};
 
 	flingr.ui.prototype.onDisconnect = function(error) {
-		this.render('home', {error: error}, '[data-content]', true);
+		this.renderTemplate('home', {error: error}, '[data-content]', true);
 	};
 
 	flingr.ui.prototype.init = function() {
@@ -231,7 +231,7 @@ window.flingr = (function(flingr, $, undefined) {
 					
 					console.log('XBMC Connected', XBMC);
 					
-					_this.onConnect(XBMC, function() { _this.renderPage.apply(_this, arguments) });
+					_this.onConnect(XBMC, function() { _this.render.apply(_this, arguments) });
 					
 					XBMC.on('XBMC.Event', function() {
 						console.log('XBMC Event', arguments);
@@ -253,7 +253,7 @@ window.flingr = (function(flingr, $, undefined) {
 					connect(settings.AutoConnectHost, settings.AutoConnectPort);
 				}
 			});
-			_this.renderPage('home');
+			_this.render('home');
 		}
 	};
 
