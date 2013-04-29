@@ -5,7 +5,9 @@
 
 window.flingr = (function(flingr, $, undefined) {
 	
-	flingr.ui = function() {};
+	flingr.ui = function() {
+		this.components = {};
+	};
 
 	flingr.ui.prototype.renderTemplate = function(template, context, target, targetReplace) {
 		var promise = $.Deferred();
@@ -43,36 +45,19 @@ window.flingr = (function(flingr, $, undefined) {
 
 	flingr.ui.prototype.setupUi = function($page, host) {
 		var _this = this,
-			$log = $('#ConsoleOutput', $page),
-			$settingsForm = $('#SettingsForm', $page),
-			$remote = $('#remote', $page);
+			components = {
+				'log': '#ConsoleOutput',
+				'settingsForm': '#SettingsForm',
+				'remote': '#remote'
+			};
 
-		_this.setupLog($log, host);
-		_this.setupSettingsForm($settingsForm, host);
-		_this.setupRemote($remote, host);
-	};
-
-	flingr.ui.prototype.setupSettingsForm = function($elem, host) {
-		var _this = this,
-			settingsForm = new flingr.settingsForm($elem, host, function() {
+		_.each(components, function(selector, name) {
+			var $elem = $(selector, $page);
+			_this.components[name] = new flingr[name]($elem, host, function() {
 				return _this.renderTemplate.apply(_this, arguments);
 			});
-		return this;
-	};
+		});
 
-	flingr.ui.prototype.setupRemote = function($elem, host) {
-		var _this = this,
-			remote = new flingr.remote($elem, host, function() {
-				return _this.renderTemplate.apply(_this, arguments);
-			});
-		return this;
-	};
-
-	flingr.ui.prototype.setupLog = function($elem, host) {
-		var _this = this,
-			log = new flingr.log($elem, host, function() {
-				return _this.renderTemplate.apply(_this, arguments);
-			});
 		return this;
 	};
 
