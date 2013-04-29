@@ -5,12 +5,11 @@
 window.flingr = window.flingr || {};
 window.flingr.remote = (function(remote, $, _, undefined) {
 
-	remote = function(element, api) {
-		console.log(element, api);
-		this.api = api;
+	remote = function(element, host) {
+		this.host = host;
 		this.context = {};
 		this.$elem = $(element);
-		this.addons = new flingr.addons(api);
+		this.addons = new flingr.addons(host.api);
 		this.setup();
 	};
 
@@ -32,9 +31,9 @@ window.flingr.remote = (function(remote, $, _, undefined) {
 					apiName = map[key];
 
 				if(apiName) {
-					_this.api.Input[apiName].send()
+					_this.host.api.Input[apiName].send()
 				} else {
-					_this.api.Input.SendText.send({
+					_this.host.api.Input.SendText.send({
 						text: String.fromCharCode(key),
 						done: false
 					});

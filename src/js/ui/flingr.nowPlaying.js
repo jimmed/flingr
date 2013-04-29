@@ -2,6 +2,8 @@
  * Flingr Now Playing UI handler
  * @author Jim O'Brien
  */
+
+// TODO: Rewrite this as a tab, not a bar
 window.flingr = window.flingr || {};
 window.flingr.nowPlaying = (function(nowPlaying, $, _, undefined) {
 
@@ -27,18 +29,18 @@ window.flingr.nowPlaying = (function(nowPlaying, $, _, undefined) {
 			 + time.seconds;
 	};
 
-	nowPlaying = function(host, element, renderer) {
+	nowPlaying = function(element, host, renderer) {
 		this.host = host;
 		this.context = {};
 		this.$elem = $(element);
-		this.renderer = renderer;
+		this.render = renderer;
 		this.update();
 		this.originalBottom = parseInt($('[data-content]').css('bottom'), 10) || 0;
 	};
 
 	nowPlaying.prototype.render = function() {
 		var _this = this;
-		return _this.renderer('nowplaying', _this.context, _this.$elem, true).done(function() {
+		return _this.render('nowplaying', _this.context, _this.$elem, true).done(function() {
 			$('[data-content]').css({bottom: (_this.originalBottom + _this.$elem.height()) + 'px'});
 		});
 	};
@@ -74,10 +76,8 @@ window.flingr.nowPlaying = (function(nowPlaying, $, _, undefined) {
 			properties: ['canseek', 'currentaudiostream', 'live', 'speed', 'time', 'totaltime', 'percentage', 'type']
 		}).done(function(data) {
 			_.extend(_this.context.player, data);
-			console.log(_this.context, data);
 			_this.context.player.totalSeconds = timeToSeconds(data.totaltime);
 			_this.context.player.seconds = timeToSeconds(data.time);
-			console.log(_this.context);
 		});
 	};
 
