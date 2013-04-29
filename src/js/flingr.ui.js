@@ -44,38 +44,16 @@ window.flingr = (function(flingr, $, undefined) {
 	flingr.ui.prototype.setupUi = function($page, host) {
 		var _this = this,
 			$apiInput = $('#ConsoleInput', $page),
-			$consoleOutput = $('#ConsoleOutput', $page),
-			$consoleBody = $('#ConsoleOutputBody', $consoleOutput),
+			$log = $('#ConsoleOutput', $page),
 			$apiForm = $('form', $apiInput),
 			$settings = $('#SettingsForm', $page),
-			$remote = $('#remote', $page),
+			$remote = $('#remote', $page);
 
-			// TODO: Separate console out into separate file
-			addConsoleRow = function(row) {
-				$('.empty-table-notice', $consoleBody).hide();
-				return _this.renderTemplate('console.output.row', row, $consoleBody, false);
-			};
+		console.log('Initialising UI');
 
-		_this.setupSettingsForm($settings);
-		_this.setupRemote($remote, XBMC.api);
-
-		// Subscribe to events from our XBMC host
-		host
-			.on('XBMC.Event', function(params, event) {
-				if(params.method && params.params) {
-					addConsoleRow({action: 'notification', method: params.method, data: params.params.data})
-				}
-			})
-			.on('XBMC.Request', function(params, event) {
-				if(params.method && params.params) {
-					addConsoleRow({action: 'request', method: params.method, data: params.params})
-				}
-			})
-			.on('XBMC.Response', function(params, event) {
-				if(params.method && params.result !== undefined) {
-					addConsoleRow({action: 'response', method: params.method, data: params.result})
-				}
-			});
+		_this.setupLog($log, host);
+		_this.setupSettingsForm($settings, host);
+		_this.setupRemote($remote, host);
 	};
 
 	// TODO: Separate connection form into separate file
@@ -99,7 +77,7 @@ window.flingr = (function(flingr, $, undefined) {
 	};
 
 	// TODO: Move settings tab into separate file
-	flingr.ui.prototype.setupSettingsForm = function($form) {
+	flingr.ui.prototype.setupSettingsForm = function($form, host) {
 		var _this = this;
 
 		$form.on('change', 'input, select', function(event) {
@@ -125,8 +103,21 @@ window.flingr = (function(flingr, $, undefined) {
 		return $form;
 	};
 
-	flingr.ui.prototype.setupRemote = function($elem, api) {
-		var remote = new flingr.remote($elem, api);
+	flingr.ui.prototype.setupRemote = function($elem, host) {
+		var _this = this,
+			remote = new flingr.remote($elem, host, function() {
+				return _this.renderTemplate.apply(_this, arguments);
+			});
+		return this;
+	};
+
+	flingr.ui.prototype.setupLog = function($elem, host) {
+		var _this = this,
+			log = new flingr.log($elem, host, function() {
+				console.log('UI rendering', arguments);
+				return _this.renderTemplate.apply(_this, arguments);
+			});
+		return this;
 	};
 	
 	flingr.ui.prototype.onConnect = function(XBMC, renderPage) {
@@ -143,6 +134,7 @@ window.flingr = (function(flingr, $, undefined) {
 						api: host,
 						settings: settings
 					};
+
 				_this.render('browser', context).done(function($page) {
 					_this.setupUi($page, host);
 					new flingr.nowPlaying(host, '#nowPlaying', function() {
@@ -166,7 +158,7 @@ window.flingr = (function(flingr, $, undefined) {
 			$controls = $('input, button', $hostForm),
 			$button = $('button', $hostForm),
 			disconnect = function(error) {
-				console.log('Disconnect');
+				console.log('Disconnected');
 				$button.removeClass('btn-success').addClass('btn-info').text('Connect').prop('disabled', false);
 				$controls[0].focus();
 				_this.onDisconnect(error);
