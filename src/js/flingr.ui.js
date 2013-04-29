@@ -43,17 +43,37 @@ window.flingr = (function(flingr, $, undefined) {
 
 	flingr.ui.prototype.setupUi = function($page, host) {
 		var _this = this,
-			$apiInput = $('#ConsoleInput', $page),
 			$log = $('#ConsoleOutput', $page),
-			$apiForm = $('form', $apiInput),
-			$settings = $('#SettingsForm', $page),
+			$settingsForm = $('#SettingsForm', $page),
 			$remote = $('#remote', $page);
 
-		console.log('Initialising UI');
-
 		_this.setupLog($log, host);
-		_this.setupSettingsForm($settings, host);
+		_this.setupSettingsForm($settingsForm, host);
 		_this.setupRemote($remote, host);
+	};
+
+	flingr.ui.prototype.setupSettingsForm = function($elem, host) {
+		var _this = this,
+			settingsForm = new flingr.settingsForm($elem, host, function() {
+				return _this.renderTemplate.apply(_this, arguments);
+			});
+		return this;
+	};
+
+	flingr.ui.prototype.setupRemote = function($elem, host) {
+		var _this = this,
+			remote = new flingr.remote($elem, host, function() {
+				return _this.renderTemplate.apply(_this, arguments);
+			});
+		return this;
+	};
+
+	flingr.ui.prototype.setupLog = function($elem, host) {
+		var _this = this,
+			log = new flingr.log($elem, host, function() {
+				return _this.renderTemplate.apply(_this, arguments);
+			});
+		return this;
 	};
 
 	// TODO: Separate connection form into separate file
@@ -74,50 +94,6 @@ window.flingr = (function(flingr, $, undefined) {
 		});
 
 		return $host;
-	};
-
-	// TODO: Move settings tab into separate file
-	flingr.ui.prototype.setupSettingsForm = function($form, host) {
-		var _this = this;
-
-		$form.on('change', 'input, select', function(event) {
-			var $field = $(this),
-				key = $field.prop('id'),
-				value = $field.val(),
-				updates = {};
-
-			if($field.prop('type') == 'checkbox') {
-				value = value === 'on';
-			}
-
-			updates[key] = value;
-			flingr.settings.set(updates).done(function() {
-				flingr.settings.getAll().done(function(values) {
-					_this.renderTemplate('settings', values, '#settings', true).done(function() {
-						_this.setupSettingsForm($form);
-					});
-				});
-			});
-		});
-
-		return $form;
-	};
-
-	flingr.ui.prototype.setupRemote = function($elem, host) {
-		var _this = this,
-			remote = new flingr.remote($elem, host, function() {
-				return _this.renderTemplate.apply(_this, arguments);
-			});
-		return this;
-	};
-
-	flingr.ui.prototype.setupLog = function($elem, host) {
-		var _this = this,
-			log = new flingr.log($elem, host, function() {
-				console.log('UI rendering', arguments);
-				return _this.renderTemplate.apply(_this, arguments);
-			});
-		return this;
 	};
 	
 	flingr.ui.prototype.onConnect = function(XBMC, renderPage) {
