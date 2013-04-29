@@ -7,11 +7,11 @@
 			"scripts": [
 				"lib/underscore-min.js",
 				"lib/jquery-min.js",
-				"src/js/websockets.js",
-				"src/js/jsonrpcws.js",
-				"src/js/xbmc.js",
-				"src/js/flingr.ui.loader.js",
-				"src/js/flingr.appevents.js"
+				"src/js/xbmc/websockets.js",
+				"src/js/xbmc/jsonrpcws.js",
+				"src/js/xbmc/xbmc.js",
+				"src/js/core/flingr.ui.loader.js",
+				"src/js/core/flingr.appevents.js"
 			]
 		}
 	},
