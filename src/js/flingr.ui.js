@@ -5,8 +5,10 @@
 
 window.flingr = (function(flingr, $, undefined) {
 	
-	flingr.ui = function() {
+	flingr.ui = function(element) {
+		this.$elem = $(element);
 		this.components = {};
+		this.init();
 	};
 
 	flingr.ui.prototype.renderTemplate = function(template, context, target, targetReplace) {
@@ -27,33 +29,32 @@ window.flingr = (function(flingr, $, undefined) {
 	};
 
 	flingr.ui.prototype.render = function(pageName, context) {
-		var $page = $('[data-content]'),
+		var _this = this,
 			promise = $.Deferred();
 
-		if($page.length) {
-			this.renderTemplate(pageName, context, $page, true)
-				.done(function() {
-					promise.resolve($page);
-				})
-				.fail(function(error) {
-					promise.reject(error);
-				});
-		}
+		this.renderTemplate(pageName, context, _this.$elem, true)
+			.done(function() {
+				promise.resolve(_this.$elem);
+			})
+			.fail(function(error) {
+				promise.reject(error);
+			});
 
 		return promise.promise();
 	};
 
-	flingr.ui.prototype.setupUi = function($page, host) {
+	flingr.ui.prototype.setupUi = function() {
 		var _this = this,
 			components = {
 				'log': '#ConsoleOutput',
 				'settingsForm': '#SettingsForm',
-				'remote': '#remote'
+				'remote': '#remote',
+				'nowPlaying': '#nowPlaying'
 			};
 
 		_.each(components, function(selector, name) {
-			var $elem = $(selector, $page);
-			_this.components[name] = new flingr[name]($elem, host, function() {
+			var $elem = $(selector, _this.$elem);
+			_this.components[name] = new flingr[name]($elem, _this.host, function() {
 				return _this.renderTemplate.apply(_this, arguments);
 			});
 		});
@@ -82,25 +83,23 @@ window.flingr = (function(flingr, $, undefined) {
 	};
 	
 	flingr.ui.prototype.onConnect = function(XBMC, renderPage) {
-		var getSettings = flingr.settings.getAll(),
-			_this = this;
+		var _this = this,
+			getSettings = flingr.settings.getAll();
 
 		// TODO: Remove this
 		flingr.activeHost = XBMC;
 
 		// TODO: Render first, introspect later
-		XBMC.introspect().done(function(host) {
+		this.host = XBMC;
+		XBMC.introspect().done(function() {
 			getSettings.done(function(settings) {
 				var context = {
-						api: host,
+						api: XBMC.api,
 						settings: settings
 					};
 
-				_this.render('browser', context).done(function($page) {
-					_this.setupUi($page, host);
-					new flingr.nowPlaying(host, '#nowPlaying', function() {
-						return _this.renderTemplate.apply(_this, arguments);
-					});
+				_this.render('browser', context).done(function() {
+					_this.setupUi(_this.$elem);
 				});
 			});
 		}).fail(function(error) {
@@ -165,9 +164,3 @@ window.flingr = (function(flingr, $, undefined) {
 
 	return flingr;
 })(window.flingr || {}, jQuery);
-
-// TODO: Move this to separate 'init' file -> better potential for writing tests
-$(function() {
-	var UI = new flingr.ui;
-	UI.init();
-})
